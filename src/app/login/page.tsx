@@ -7,8 +7,8 @@ import { FormEvent, useState } from "react";
 export default function LoginPage() {
   const { login } = useAuth();
   const router = useRouter();
-  const [email, setEmail] = useState("admin@shop.local");
-  const [password, setPassword] = useState("Admin@12345");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -35,6 +35,8 @@ export default function LoginPage() {
           className="w-full rounded-xl border border-slate-300 px-4 py-2"
           placeholder="Email"
           type="email"
+          autoComplete="email"
+          required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
@@ -42,6 +44,8 @@ export default function LoginPage() {
           className="w-full rounded-xl border border-slate-300 px-4 py-2"
           placeholder="Password"
           type="password"
+          autoComplete="current-password"
+          required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />

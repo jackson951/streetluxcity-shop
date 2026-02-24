@@ -4,30 +4,49 @@ import { useCart } from "@/contexts/cart-context";
 import { useAuth } from "@/contexts/auth-context";
 import { api } from "@/lib/api";
 import { Product } from "@/lib/types";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, getProductImage, toSafeQuantity } from "@/lib/utils";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function ProductDetailPage() {
   const params = useParams<{ id: string }>();
-  const { addItem } = useCart();
+  const { addItem, mutating } = useCart();
   const { user } = useAuth();
   const [product, setProduct] = useState<Product | null>(null);
   const [qty, setQty] = useState(1);
   const [message, setMessage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.getProduct(Number(params.id)).then(setProduct).catch((err) => setMessage((err as Error).message));
+    const id = Number(params.id);
+    if (!Number.isFinite(id)) {
+      setMessage("Invalid product id.");
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    api
+      .getProduct(id)
+      .then((data) => {
+        setProduct(data);
+        setQty(toSafeQuantity(1, data.stockQuantity));
+      })
+      .catch((err) => setMessage((err as Error).message))
+      .finally(() => setLoading(false));
   }, [params.id]);
 
-  if (!product) return <div className="rounded-xl bg-white p-4">Loading product...</div>;
+  if (loading) return <div className="rounded-xl bg-white p-4">Loading product...</div>;
+  if (!product) return <div className="rounded-xl bg-white p-4">Product not found.</div>;
+
+  const inStock = product.active && product.stockQuantity > 0;
+  const safeQty = toSafeQuantity(qty, product.stockQuantity);
 
   return (
     <section className="grid gap-8 lg:grid-cols-2">
       <div className="space-y-3">
-        <img src={product.imageUrls?.[0]} alt={product.name} className="h-96 w-full rounded-2xl object-cover" />
+        <img src={getProductImage(product.imageUrls)} alt={product.name} className="h-96 w-full rounded-2xl object-cover" />
         <div className="grid grid-cols-3 gap-2">
-          {product.imageUrls?.map((img, i) => (
+          {(product.imageUrls?.length ? product.imageUrls : [getProductImage(product.imageUrls)]).map((img, i) => (
             <img key={i} src={img} alt={`${product.name}-${i}`} className="h-24 w-full rounded-lg object-cover" />
           ))}
         </div>
@@ -43,23 +62,27 @@ export default function ProductDetailPage() {
           <input
             type="number"
             min={1}
+            max={Math.max(1, product.stockQuantity)}
             value={qty}
-            onChange={(e) => setQty(Number(e.target.value))}
+            onChange={(e) => setQty(toSafeQuantity(Number(e.target.value), product.stockQuantity))}
             className="w-24 rounded-lg border border-slate-300 px-3 py-2"
+            disabled={!inStock || mutating}
           />
           <button
             onClick={async () => {
+              if (!inStock) return setMessage("This product is currently out of stock.");
               if (!user?.customerId) return setMessage("Login as customer to add items.");
               try {
-                await addItem(product.id, qty);
+                await addItem(product.id, safeQty);
                 setMessage("Added to cart.");
               } catch (err) {
                 setMessage((err as Error).message);
               }
             }}
-            className="rounded-lg bg-brand-600 px-4 py-2 text-white hover:bg-brand-700"
+            disabled={!inStock || mutating}
+            className="rounded-lg bg-brand-600 px-4 py-2 text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:bg-slate-300"
           >
-            Add to cart
+            {inStock ? "Add to cart" : "Out of stock"}
           </button>
         </div>
 

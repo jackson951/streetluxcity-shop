@@ -3,16 +3,21 @@
 import { useCart } from "@/contexts/cart-context";
 import { useAuth } from "@/contexts/auth-context";
 import { Product } from "@/lib/types";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, getProductImage } from "@/lib/utils";
 import Link from "next/link";
 import { useState } from "react";
 
 export function ProductCard({ product }: { product: Product }) {
-  const { addItem } = useCart();
+  const { addItem, mutating } = useCart();
   const { user } = useAuth();
   const [message, setMessage] = useState<string | null>(null);
+  const inStock = product.active && product.stockQuantity > 0;
 
   async function handleAdd() {
+    if (!inStock) {
+      setMessage("This product is currently out of stock.");
+      return;
+    }
     if (!user?.customerId) {
       setMessage("Login as customer to add items.");
       return;
@@ -29,7 +34,7 @@ export function ProductCard({ product }: { product: Product }) {
     <article className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(22,76,193,0.18)]">
       <Link href={`/products/${product.id}`} className="block">
         <img
-          src={product.imageUrls?.[0] || "https://images.unsplash.com/photo-1542291026-7eec264c27ff"}
+          src={getProductImage(product.imageUrls)}
           alt={product.name}
           className="h-48 w-full object-cover"
         />
@@ -42,8 +47,12 @@ export function ProductCard({ product }: { product: Product }) {
         <p className="line-clamp-2 text-sm text-slate-600">{product.description}</p>
         <div className="flex items-center justify-between pt-2">
           <span className="text-base font-bold text-brand-700">{formatCurrency(product.price)}</span>
-          <button onClick={handleAdd} className="rounded-lg bg-brand-600 px-3 py-2 text-sm text-white hover:bg-brand-700">
-            Add
+          <button
+            onClick={handleAdd}
+            disabled={!inStock || mutating}
+            className="rounded-lg bg-brand-600 px-3 py-2 text-sm text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+          >
+            {inStock ? "Add" : "Out of stock"}
           </button>
         </div>
         {message && <p className="text-xs text-slate-500">{message}</p>}

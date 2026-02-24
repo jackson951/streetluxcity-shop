@@ -17,6 +17,14 @@ export default function AdminPage() {
             <h2 className="text-xl font-semibold">Manage Products</h2>
             <p className="mt-2 text-sm text-slate-600">Add products with multiple images and pricing.</p>
           </Link>
+          <Link href="/admin/orders" className="rounded-2xl border border-slate-200 bg-white p-6 hover:shadow-sm">
+            <h2 className="text-xl font-semibold">All Orders</h2>
+            <p className="mt-2 text-sm text-slate-600">View orders across all customers and monitor totals.</p>
+          </Link>
+          <Link href="/admin/users" className="rounded-2xl border border-slate-200 bg-white p-6 hover:shadow-sm">
+            <h2 className="text-xl font-semibold">Manage Users</h2>
+            <p className="mt-2 text-sm text-slate-600">Enable or disable user access in real time.</p>
+          </Link>
         </div>
       </section>
     </RequireAdmin>

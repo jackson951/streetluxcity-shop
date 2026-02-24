@@ -48,6 +48,13 @@ export type Order = {
   createdAt: string;
   customerId: number;
   items: OrderItem[];
+  customerName?: string;
+  customerEmail?: string;
+  customer?: {
+    id: number;
+    fullName?: string;
+    email?: string;
+  };
 };
 
 export type AuthUser = {
@@ -64,4 +71,17 @@ export type AuthResponse = {
   accessTokenExpiresInSeconds: number;
   refreshToken: string;
   user: AuthUser;
+};
+
+export type AdminUser = {
+  id: number;
+  email: string;
+  fullName: string;
+  roles: string[];
+  enabled?: boolean;
+  accountNonLocked?: boolean;
+  accountNonExpired?: boolean;
+  credentialsNonExpired?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 };

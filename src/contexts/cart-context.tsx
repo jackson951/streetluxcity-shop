@@ -3,16 +3,17 @@
 import { useAuth } from "@/contexts/auth-context";
 import { api } from "@/lib/api";
 import { Cart } from "@/lib/types";
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 
 type CartContextValue = {
   cart: Cart | null;
   loading: boolean;
+  mutating: boolean;
   refreshCart: () => Promise<void>;
   addItem: (productId: number, quantity: number) => Promise<void>;
   updateItem: (itemId: number, quantity: number) => Promise<void>;
   removeItem: (itemId: number) => Promise<void>;
-  checkout: () => Promise<void>;
+  checkout: () => Promise<number>;
 };
 
 const CartContext = createContext<CartContextValue | undefined>(undefined);
@@ -21,6 +22,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const { user, token } = useAuth();
   const [cart, setCart] = useState<Cart | null>(null);
   const [loading, setLoading] = useState(false);
+  const [mutating, setMutating] = useState(false);
 
   const refreshCart = useCallback(async () => {
     if (!token || !user?.customerId) {
@@ -41,29 +43,47 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const addItem = async (productId: number, quantity: number) => {
     if (!token || !user?.customerId) throw new Error("Login as customer required");
-    setCart(await api.addToCart(token, user.customerId, productId, quantity));
+    setMutating(true);
+    try {
+      setCart(await api.addToCart(token, user.customerId, productId, quantity));
+    } finally {
+      setMutating(false);
+    }
   };
 
   const updateItem = async (itemId: number, quantity: number) => {
     if (!token || !user?.customerId) throw new Error("Login as customer required");
-    setCart(await api.updateCartItem(token, user.customerId, itemId, quantity));
+    setMutating(true);
+    try {
+      setCart(await api.updateCartItem(token, user.customerId, itemId, quantity));
+    } finally {
+      setMutating(false);
+    }
   };
 
   const removeItem = async (itemId: number) => {
     if (!token || !user?.customerId) throw new Error("Login as customer required");
-    setCart(await api.removeCartItem(token, user.customerId, itemId));
+    setMutating(true);
+    try {
+      setCart(await api.removeCartItem(token, user.customerId, itemId));
+    } finally {
+      setMutating(false);
+    }
   };
 
   const checkout = async () => {
     if (!token || !user?.customerId) throw new Error("Login as customer required");
-    await api.checkout(token, user.customerId);
-    await refreshCart();
+    setMutating(true);
+    try {
+      const order = await api.checkout(token, user.customerId);
+      await refreshCart();
+      return order.id;
+    } finally {
+      setMutating(false);
+    }
   };
 
-  const value = useMemo(
-    () => ({ cart, loading, refreshCart, addItem, updateItem, removeItem, checkout }),
-    [cart, loading, refreshCart]
-  );
+  const value = { cart, loading, mutating, refreshCart, addItem, updateItem, removeItem, checkout };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

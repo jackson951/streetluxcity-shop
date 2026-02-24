@@ -10,10 +10,11 @@ export function Navbar() {
   const { user, isAdmin, logout } = useAuth();
   const { cart } = useCart();
   const router = useRouter();
+  const cartQuantity = cart?.items.reduce((sum, item) => sum + item.quantity, 0) ?? 0;
 
   return (
     <header className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/85 backdrop-blur">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3">
         <Link href="/" className="flex items-center gap-2 font-bold tracking-tight text-brand-700">
           <ShoppingBag className="h-5 w-5" />
           ShopFlow
@@ -31,7 +32,7 @@ export function Navbar() {
           <Link href="/cart" className="inline-flex items-center gap-1">
             <ShoppingCart className="h-4 w-4" />
             Cart
-            <span className="rounded bg-slate-200 px-1 text-xs">{cart?.items.length ?? 0}</span>
+            <span className="rounded bg-slate-200 px-1 text-xs">{cartQuantity}</span>
           </Link>
 
           {user ? (

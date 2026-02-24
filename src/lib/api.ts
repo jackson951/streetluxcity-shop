@@ -1,11 +1,77 @@
-import { AuthResponse, Cart, Category, Order, Product } from "@/lib/types";
+import { AdminUser, AuthResponse, Cart, Category, Order, Product } from "@/lib/types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080/api/v1";
+const GET_CACHE_TTL_MS = 60_000;
 
 type Method = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
+type CacheEntry<T> = {
+  value: T;
+  expiresAt: number;
+};
+
+const responseCache = new Map<string, CacheEntry<unknown>>();
+const inFlightRequests = new Map<string, Promise<unknown>>();
+
+function getCacheKey(path: string, method: Method, token?: string) {
+  return `${method}:${path}:${token || ""}`;
+}
+
+function readCachedValue<T>(key: string): T | null {
+  const entry = responseCache.get(key);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) {
+    responseCache.delete(key);
+    return null;
+  }
+  return entry.value as T;
+}
+
+function writeCachedValue<T>(key: string, value: T) {
+  responseCache.set(key, {
+    value,
+    expiresAt: Date.now() + GET_CACHE_TTL_MS
+  });
+}
+
+function invalidateGetCache(prefixes: string[]) {
+  for (const key of responseCache.keys()) {
+    for (const prefix of prefixes) {
+      if (key.startsWith(`GET:${prefix}:`)) {
+        responseCache.delete(key);
+        break;
+      }
+    }
+  }
+}
+
+async function parseResponse<T>(res: Response): Promise<T> {
+  if (!res.ok) {
+    const data = await res.json().catch(() => null);
+    throw new Error(data?.message || `Request failed (${res.status})`);
+  }
+
+  if (res.status === 204) return {} as T;
+
+  const contentType = res.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) return {} as T;
+  const text = await res.text();
+  if (!text.trim()) return {} as T;
+  return JSON.parse(text) as T;
+}
+
 async function request<T>(path: string, method: Method, token?: string, body?: unknown): Promise<T> {
-  const res = await fetch(`${API_BASE_URL}${path}`, {
+  const cacheKey = getCacheKey(path, method, token);
+
+  if (method === "GET") {
+    const cached = readCachedValue<T>(cacheKey);
+    if (cached) return cached;
+
+    const pending = inFlightRequests.get(cacheKey);
+    if (pending) return pending as Promise<T>;
+  }
+
+  const fetchPromise = fetch(`${API_BASE_URL}${path}`, {
     method,
     headers: {
       "Content-Type": "application/json",
@@ -13,15 +79,23 @@ async function request<T>(path: string, method: Method, token?: string, body?: u
     },
     ...(body ? { body: JSON.stringify(body) } : {}),
     cache: "no-store"
-  });
+  }).then((res) => parseResponse<T>(res));
 
-  if (!res.ok) {
-    const data = await res.json().catch(() => null);
-    throw new Error(data?.message || `Request failed (${res.status})`);
+  if (method === "GET") {
+    const trackedPromise = fetchPromise
+      .then((data) => {
+        writeCachedValue(cacheKey, data);
+        return data;
+      })
+      .finally(() => {
+        inFlightRequests.delete(cacheKey);
+      });
+
+    inFlightRequests.set(cacheKey, trackedPromise as Promise<unknown>);
+    return trackedPromise;
   }
 
-  if (res.status === 204) return {} as T;
-  return (await res.json()) as T;
+  return fetchPromise;
 }
 
 export const api = {
@@ -33,19 +107,54 @@ export const api = {
 
   listProducts: () => request<Product[]>("/products", "GET"),
   getProduct: (id: number) => request<Product>(`/products/${id}`, "GET"),
-  createProduct: (token: string, payload: unknown) => request<Product>("/products", "POST", token, payload),
+  createProduct: async (token: string, payload: unknown) => {
+    const created = await request<Product>("/products", "POST", token, payload);
+    invalidateGetCache(["/products"]);
+    return created;
+  },
+  deleteProduct: async (token: string, productId: number) => {
+    await request<void>(`/products/${productId}`, "DELETE", token);
+    invalidateGetCache(["/products"]);
+  },
 
   listCategories: () => request<Category[]>("/categories", "GET"),
-  createCategory: (token: string, payload: { name: string; description?: string }) =>
-    request<Category>("/categories", "POST", token, payload),
+  createCategory: async (token: string, payload: { name: string; description?: string }) => {
+    const created = await request<Category>("/categories", "POST", token, payload);
+    invalidateGetCache(["/categories", "/products"]);
+    return created;
+  },
+  deleteCategory: async (token: string, categoryId: number) => {
+    await request<void>(`/categories/${categoryId}`, "DELETE", token);
+    invalidateGetCache(["/categories", "/products"]);
+  },
+  adminListOrders: (token: string) => request<Order[]>("/admin/orders", "GET", token),
+  adminListUsers: (token: string) => request<AdminUser[]>("/admin/users", "GET", token),
+  adminSetUserAccess: async (token: string, userId: number, enabled: boolean) => {
+    const updated = await request<AdminUser>(`/admin/users/${userId}/access?enabled=${enabled}`, "PATCH", token);
+    invalidateGetCache(["/admin/users"]);
+    return updated;
+  },
 
   getCart: (token: string, customerId: number) => request<Cart>(`/customers/${customerId}/cart`, "GET", token),
-  addToCart: (token: string, customerId: number, productId: number, quantity: number) =>
-    request<Cart>(`/customers/${customerId}/cart/items`, "POST", token, { productId, quantity }),
-  updateCartItem: (token: string, customerId: number, itemId: number, quantity: number) =>
-    request<Cart>(`/customers/${customerId}/cart/items/${itemId}`, "PATCH", token, { quantity }),
-  removeCartItem: (token: string, customerId: number, itemId: number) =>
-    request<Cart>(`/customers/${customerId}/cart/items/${itemId}`, "DELETE", token),
-  checkout: (token: string, customerId: number) => request<Order>(`/customers/${customerId}/orders/checkout`, "POST", token),
+  addToCart: async (token: string, customerId: number, productId: number, quantity: number) => {
+    const cart = await request<Cart>(`/customers/${customerId}/cart/items`, "POST", token, { productId, quantity });
+    invalidateGetCache([`/customers/${customerId}/cart`]);
+    return cart;
+  },
+  updateCartItem: async (token: string, customerId: number, itemId: number, quantity: number) => {
+    const cart = await request<Cart>(`/customers/${customerId}/cart/items/${itemId}`, "PATCH", token, { quantity });
+    invalidateGetCache([`/customers/${customerId}/cart`]);
+    return cart;
+  },
+  removeCartItem: async (token: string, customerId: number, itemId: number) => {
+    const cart = await request<Cart>(`/customers/${customerId}/cart/items/${itemId}`, "DELETE", token);
+    invalidateGetCache([`/customers/${customerId}/cart`]);
+    return cart;
+  },
+  checkout: async (token: string, customerId: number) => {
+    const order = await request<Order>(`/customers/${customerId}/orders/checkout`, "POST", token);
+    invalidateGetCache([`/customers/${customerId}/cart`, `/customers/${customerId}/orders`, "/admin/orders"]);
+    return order;
+  },
   listOrders: (token: string, customerId: number) => request<Order[]>(`/customers/${customerId}/orders`, "GET", token)
 };
