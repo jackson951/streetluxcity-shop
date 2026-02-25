@@ -5,7 +5,7 @@ import { Navbar } from "@/components/navbar";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ShopFlow E-Commerce",
+  title: "StreetLuxCity E-Commerce",
   description: "Full e-commerce frontend"
 };
 

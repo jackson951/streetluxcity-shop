@@ -17,7 +17,7 @@ export function Navbar() {
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3">
         <Link href="/" className="flex items-center gap-2 font-bold tracking-tight text-brand-700">
           <ShoppingBag className="h-5 w-5" />
-          ShopFlow
+          StreetLuxCity
         </Link>
 
         <nav className="flex items-center gap-4 text-sm text-slate-700">
