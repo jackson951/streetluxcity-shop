@@ -6,7 +6,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "ShopFlow E-Commerce",
-  description: "Full e-commerce frontend for your Spring Boot API"
+  description: "Full e-commerce frontend"
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

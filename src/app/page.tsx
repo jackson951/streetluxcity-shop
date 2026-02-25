@@ -4,7 +4,7 @@ import { ProductCard } from "@/components/product-card";
 import { api } from "@/lib/api";
 import { Category, Product } from "@/lib/types";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 
 type SortOption = "relevance" | "price-asc" | "price-desc" | "name-asc";
 type StockFilter = "all" | "in-stock" | "out-of-stock";
@@ -30,7 +30,7 @@ function parseSortOption(value: string | null): SortOption {
   return VALID_SORT_OPTIONS.includes(value as SortOption) ? (value as SortOption) : "relevance";
 }
 
-export default function HomePage() {
+function HomeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -279,6 +279,14 @@ export default function HomePage() {
         ))}
       </div>
     </section>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={<div className="rounded-xl bg-white p-4 text-sm text-slate-600">Loading catalog...</div>}>
+      <HomeContent />
+    </Suspense>
   );
 }
 

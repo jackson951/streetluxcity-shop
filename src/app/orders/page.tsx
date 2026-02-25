@@ -68,9 +68,16 @@ export default function OrdersPage() {
                 ))}
               </ul>
               {(order.items?.length || 0) > 3 ? <p className="mt-2 text-xs text-slate-500">+{(order.items?.length || 0) - 3} more items</p> : null}
-              <Link href={`/orders/${order.id}`} className="mt-3 inline-flex text-sm font-medium text-brand-700 hover:text-brand-800">
-                View order details
-              </Link>
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                <Link href={`/orders/${order.id}`} className="inline-flex text-sm font-medium text-brand-700 hover:text-brand-800">
+                  View order details
+                </Link>
+                {!isAdmin && order.status !== "PAID" ? (
+                  <Link href={`/checkout/payment?orderId=${order.id}`} className="inline-flex text-sm font-medium text-brand-700 hover:text-brand-800">
+                    Complete payment
+                  </Link>
+                ) : null}
+              </div>
             </article>
           ))}
         </div>

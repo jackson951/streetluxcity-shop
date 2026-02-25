@@ -31,6 +31,14 @@ export type Cart = {
   totalAmount: number;
 };
 
+export type CustomerProfile = {
+  id: number;
+  fullName: string;
+  email: string;
+  phone?: string;
+  address?: string;
+};
+
 export type OrderItem = {
   id: number;
   productId: number;
@@ -71,6 +79,36 @@ export type AuthResponse = {
   accessTokenExpiresInSeconds: number;
   refreshToken: string;
   user: AuthUser;
+};
+
+export type PaymentProvider = "CARD";
+export type PaymentStatus = "APPROVED" | "DECLINED";
+
+export type PaymentMethod = {
+  id: number;
+  provider: PaymentProvider;
+  cardHolderName: string;
+  brand: string;
+  last4: string;
+  expiryMonth: number;
+  expiryYear: number;
+  billingAddress?: string;
+  defaultMethod: boolean;
+  enabled: boolean;
+  createdAt: string;
+};
+
+export type PaymentTransaction = {
+  id: number;
+  orderId: number;
+  customerId: number;
+  paymentMethodId: number;
+  status: PaymentStatus;
+  amount: number;
+  currency: string;
+  gatewayResponseCode?: string;
+  gatewayMessage?: string;
+  processedAt: string;
 };
 
 export type AdminUser = {

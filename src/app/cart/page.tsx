@@ -5,11 +5,13 @@ import { useAuth } from "@/contexts/auth-context";
 import { useCart } from "@/contexts/cart-context";
 import { formatCurrency } from "@/lib/utils";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function CartPage() {
   const { user } = useAuth();
   const { cart, loading, mutating, updateItem, removeItem, checkout } = useCart();
+  const router = useRouter();
   const [message, setMessage] = useState<string | null>(null);
   const [updatingItemId, setUpdatingItemId] = useState<number | null>(null);
 
@@ -83,12 +85,13 @@ export default function CartPage() {
             <button
               onClick={async () => {
                 try {
-                  setMessage(null);
-                  const orderId = await checkout();
-                  setMessage(`Checkout successful. Order #${orderId} created.`);
-                } catch (err) {
-                  setMessage((err as Error).message);
-                }
+                    setMessage(null);
+                    const orderId = await checkout();
+                    setMessage(`Checkout successful. Order #${orderId} created. Redirecting to payment...`);
+                    router.push(`/checkout/payment?orderId=${orderId}`);
+                  } catch (err) {
+                    setMessage((err as Error).message);
+                  }
               }}
               disabled={mutating}
               className="rounded-lg bg-brand-600 px-4 py-2 text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:bg-slate-300"

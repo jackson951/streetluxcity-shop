@@ -2,7 +2,7 @@
 
 import { api } from "@/lib/api";
 import { AuthResponse, AuthUser } from "@/lib/types";
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 type RegisterPayload = {
   fullName: string;
@@ -19,6 +19,8 @@ type AuthContextValue = {
   isAdmin: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (payload: RegisterPayload) => Promise<void>;
+  refreshUser: () => Promise<void>;
+  setUser: (user: AuthUser | null) => void;
   logout: () => void;
 };
 
@@ -78,6 +80,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setToken(auth.accessToken);
   };
 
+  const refreshUser = useCallback(async () => {
+    if (!token) return;
+    const current = readStoredAuth();
+    const nextUser = await api.me(token);
+    setUser(nextUser);
+    if (current) {
+      persistAuth({
+        ...current,
+        user: nextUser,
+        accessToken: token
+      });
+    }
+  }, [token]);
+
   const logout = () => {
     localStorage.removeItem(STORAGE_KEY);
     setUser(null);
@@ -92,9 +108,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isAdmin: user?.roles?.includes("ROLE_ADMIN") ?? false,
       login,
       register,
+      refreshUser,
+      setUser,
       logout
     }),
-    [user, token, loading]
+    [user, token, loading, refreshUser]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

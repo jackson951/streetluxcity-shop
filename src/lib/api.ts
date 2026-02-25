@@ -1,4 +1,14 @@
-import { AdminUser, AuthResponse, Cart, Category, Order, Product } from "@/lib/types";
+import {
+  AdminUser,
+  AuthResponse,
+  Cart,
+  Category,
+  CustomerProfile,
+  Order,
+  PaymentMethod,
+  PaymentTransaction,
+  Product
+} from "@/lib/types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080/api/v1";
 const GET_CACHE_TTL_MS = 60_000;
@@ -104,6 +114,17 @@ export const api = {
   register: (payload: { fullName: string; email: string; password: string; phone?: string; address?: string }) =>
     request<AuthResponse>("/auth/register", "POST", undefined, payload),
   me: (token: string) => request<AuthResponse["user"]>("/auth/me", "GET", token),
+  getCustomer: (token: string, customerId: number) =>
+    request<CustomerProfile>(`/customers/${customerId}`, "GET", token),
+  updateCustomer: async (
+    token: string,
+    customerId: number,
+    payload: { fullName: string; email: string; phone?: string; address?: string }
+  ) => {
+    const customer = await request<CustomerProfile>(`/customers/${customerId}`, "PUT", token, payload);
+    invalidateGetCache([`/customers/${customerId}`]);
+    return customer;
+  },
 
   listProducts: () => request<Product[]>("/products", "GET"),
   getProduct: (id: number) => request<Product>(`/products/${id}`, "GET"),
@@ -156,5 +177,57 @@ export const api = {
     invalidateGetCache([`/customers/${customerId}/cart`, `/customers/${customerId}/orders`, "/admin/orders"]);
     return order;
   },
-  listOrders: (token: string, customerId: number) => request<Order[]>(`/customers/${customerId}/orders`, "GET", token)
+  listOrders: (token: string, customerId: number) => request<Order[]>(`/customers/${customerId}/orders`, "GET", token),
+  getOrder: (token: string, orderId: number) => request<Order>(`/orders/${orderId}`, "GET", token),
+
+  listPaymentMethods: (token: string, customerId: number) =>
+    request<PaymentMethod[]>(`/customers/${customerId}/payment-methods`, "GET", token),
+  createPaymentMethod: async (
+    token: string,
+    customerId: number,
+    payload: {
+      provider?: "CARD";
+      cardHolderName: string;
+      cardNumber: string;
+      brand?: string;
+      expiryMonth: number;
+      expiryYear: number;
+      billingAddress?: string;
+      defaultMethod?: boolean;
+    }
+  ) => {
+    const method = await request<PaymentMethod>(`/customers/${customerId}/payment-methods`, "POST", token, payload);
+    invalidateGetCache([`/customers/${customerId}/payment-methods`]);
+    return method;
+  },
+  setDefaultPaymentMethod: async (token: string, customerId: number, paymentMethodId: number) => {
+    const method = await request<PaymentMethod>(
+      `/customers/${customerId}/payment-methods/${paymentMethodId}/default`,
+      "PATCH",
+      token
+    );
+    invalidateGetCache([`/customers/${customerId}/payment-methods`]);
+    return method;
+  },
+  setPaymentMethodEnabled: async (token: string, customerId: number, paymentMethodId: number, enabled: boolean) => {
+    const method = await request<PaymentMethod>(
+      `/customers/${customerId}/payment-methods/${paymentMethodId}/access?enabled=${enabled}`,
+      "PATCH",
+      token
+    );
+    invalidateGetCache([`/customers/${customerId}/payment-methods`]);
+    return method;
+  },
+  processOrderPayment: async (token: string, orderId: number, paymentMethodId: number, cvv: string) => {
+    const payment = await request<PaymentTransaction>(`/orders/${orderId}/payments`, "POST", token, {
+      paymentMethodId,
+      cvv
+    });
+    invalidateGetCache([`/orders/${orderId}/payments`, `/orders/${orderId}`, "/admin/orders"]);
+    return payment;
+  },
+  listOrderPayments: (token: string, orderId: number) =>
+    request<PaymentTransaction[]>(`/orders/${orderId}/payments`, "GET", token),
+  listCustomerPayments: (token: string, customerId: number) =>
+    request<PaymentTransaction[]>(`/customers/${customerId}/payments`, "GET", token)
 };

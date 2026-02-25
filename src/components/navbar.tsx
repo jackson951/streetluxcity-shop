@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/contexts/auth-context";
 import { useCart } from "@/contexts/cart-context";
-import { LogIn, LogOut, Shield, ShoppingBag, ShoppingCart, UserPlus } from "lucide-react";
+import { LogIn, LogOut, Shield, ShoppingBag, ShoppingCart, UserRound, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -23,6 +23,12 @@ export function Navbar() {
         <nav className="flex items-center gap-4 text-sm text-slate-700">
           <Link href="/">Products</Link>
           <Link href="/orders">Orders</Link>
+          {user ? (
+            <Link href="/profile" className="inline-flex items-center gap-1">
+              <UserRound className="h-4 w-4" />
+              Profile
+            </Link>
+          ) : null}
           {isAdmin && (
             <Link href="/admin" className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-3 py-1 text-brand-700">
               <Shield className="h-4 w-4" />
