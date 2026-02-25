@@ -1,8 +1,14 @@
-export function formatCurrency(value: number) {
-  return new Intl.NumberFormat("en-US", {
+const DEFAULT_USD_TO_ZAR = 18.5;
+const parsedUsdToZar = Number(process.env.NEXT_PUBLIC_USD_TO_ZAR);
+const USD_TO_ZAR = Number.isFinite(parsedUsdToZar) && parsedUsdToZar > 0 ? parsedUsdToZar : DEFAULT_USD_TO_ZAR;
+
+export function formatCurrency(value: number, options?: { convertFromUsd?: boolean }) {
+  const convertFromUsd = options?.convertFromUsd ?? true;
+  const amount = convertFromUsd ? value * USD_TO_ZAR : value;
+  return new Intl.NumberFormat("en-ZA", {
     style: "currency",
-    currency: "USD"
-  }).format(value);
+    currency: "ZAR"
+  }).format(amount);
 }
 
 export function formatDate(value: string) {

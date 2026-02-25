@@ -4,7 +4,7 @@ import { RequireAdmin } from "@/components/route-guards";
 import { useAuth } from "@/contexts/auth-context";
 import { api } from "@/lib/api";
 import { Category, Product } from "@/lib/types";
-import { getProductImage } from "@/lib/utils";
+import { formatCurrency, getProductImage } from "@/lib/utils";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 
 export default function AdminProductsPage() {
@@ -302,7 +302,7 @@ export default function AdminProductsPage() {
                 <img src={getProductImage(p.imageUrls)} alt={p.name} className="h-32 w-full rounded-xl object-cover" />
                 <p className="mt-3 line-clamp-1 font-medium text-slate-900">{p.name}</p>
                 <p className="text-xs text-slate-500">{p.category.name}</p>
-                <p className="mt-1 text-sm font-semibold text-brand-700">${p.price.toFixed(2)}</p>
+                <p className="mt-1 text-sm font-semibold text-brand-700">{formatCurrency(p.price)}</p>
                 <p className="text-xs text-slate-500">Stock: {p.stockQuantity}</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <button
