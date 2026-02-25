@@ -54,6 +54,15 @@ function invalidateGetCache(prefixes: string[]) {
       }
     }
   }
+
+  for (const key of inFlightRequests.keys()) {
+    for (const prefix of prefixes) {
+      if (key.startsWith(`GET:${prefix}:`)) {
+        inFlightRequests.delete(key);
+        break;
+      }
+    }
+  }
 }
 
 async function parseResponse<T>(res: Response): Promise<T> {

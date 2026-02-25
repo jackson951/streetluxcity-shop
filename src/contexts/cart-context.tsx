@@ -7,6 +7,7 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 
 type CartContextValue = {
   cart: Cart | null;
+  cartQuantity: number;
   loading: boolean;
   mutating: boolean;
   refreshCart: () => Promise<void>;
@@ -21,6 +22,7 @@ const CartContext = createContext<CartContextValue | undefined>(undefined);
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const { token, effectiveCustomerId } = useAuth();
   const [cart, setCart] = useState<Cart | null>(null);
+  const [optimisticQuantityDelta, setOptimisticQuantityDelta] = useState(0);
   const [loading, setLoading] = useState(false);
   const [mutating, setMutating] = useState(false);
 
@@ -41,11 +43,29 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     refreshCart().catch(() => undefined);
   }, [refreshCart]);
 
+  const syncCartFromMutation = useCallback(
+    async (nextCart: Cart | null | undefined) => {
+      if (nextCart && Array.isArray(nextCart.items)) {
+        setCart(nextCart);
+        setOptimisticQuantityDelta(0);
+        return;
+      }
+      await refreshCart();
+      setOptimisticQuantityDelta(0);
+    },
+    [refreshCart]
+  );
+
   const addItem = async (productId: string, quantity: number) => {
     if (!token || !effectiveCustomerId) throw new Error("Switch to customer view to use cart.");
     setMutating(true);
+    setOptimisticQuantityDelta((prev) => prev + quantity);
     try {
-      setCart(await api.addToCart(token, effectiveCustomerId, productId, quantity));
+      const nextCart = await api.addToCart(token, effectiveCustomerId, productId, quantity);
+      await syncCartFromMutation(nextCart);
+    } catch (err) {
+      setOptimisticQuantityDelta(0);
+      throw err;
     } finally {
       setMutating(false);
     }
@@ -55,7 +75,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     if (!token || !effectiveCustomerId) throw new Error("Switch to customer view to use cart.");
     setMutating(true);
     try {
-      setCart(await api.updateCartItem(token, effectiveCustomerId, itemId, quantity));
+      const nextCart = await api.updateCartItem(token, effectiveCustomerId, itemId, quantity);
+      await syncCartFromMutation(nextCart);
+    } catch (err) {
+      setOptimisticQuantityDelta(0);
+      throw err;
     } finally {
       setMutating(false);
     }
@@ -65,7 +89,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     if (!token || !effectiveCustomerId) throw new Error("Switch to customer view to use cart.");
     setMutating(true);
     try {
-      setCart(await api.removeCartItem(token, effectiveCustomerId, itemId));
+      const nextCart = await api.removeCartItem(token, effectiveCustomerId, itemId);
+      await syncCartFromMutation(nextCart);
+    } catch (err) {
+      setOptimisticQuantityDelta(0);
+      throw err;
     } finally {
       setMutating(false);
     }
@@ -77,13 +105,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     try {
       const order = await api.checkout(token, effectiveCustomerId);
       await refreshCart();
+      setOptimisticQuantityDelta(0);
       return order.id;
     } finally {
       setMutating(false);
     }
   };
 
-  const value = { cart, loading, mutating, refreshCart, addItem, updateItem, removeItem, checkout };
+  const cartQuantity = (cart?.items.reduce((sum, item) => sum + item.quantity, 0) ?? 0) + optimisticQuantityDelta;
+  const value = { cart, cartQuantity, loading, mutating, refreshCart, addItem, updateItem, removeItem, checkout };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

@@ -41,6 +41,8 @@ export function ProductCard({ product }: { product: Product }) {
           src={getProductImage(product.imageUrls)}
           alt={product.name}
           className="h-48 w-full object-cover"
+          loading="lazy"
+          decoding="async"
         />
       </Link>
       <div className="space-y-2 p-4">

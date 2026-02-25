@@ -1,10 +1,10 @@
 "use client";
 
-import { ProductCard } from "@/components/product-card";
+import { VirtualizedProductGrid } from "@/components/virtualized-product-grid";
 import { api } from "@/lib/api";
 import { Category, Product } from "@/lib/types";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useDeferredValue, useEffect, useMemo, useState } from "react";
 
 type SortOption = "relevance" | "price-asc" | "price-desc" | "name-asc";
 type StockFilter = "all" | "in-stock" | "out-of-stock";
@@ -44,6 +44,7 @@ function HomeContent() {
   const [sortBy, setSortBy] = useState<SortOption>(parseSortOption(searchParams.get("sort")));
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const deferredQuery = useDeferredValue(query);
 
   useEffect(() => {
     setLoading(true);
@@ -106,7 +107,7 @@ function HomeContent() {
   }, [products]);
 
   const filtered = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
+    const normalizedQuery = deferredQuery.trim().toLowerCase();
     const normalizedCategory = selectedCategory.trim().toLowerCase();
     const knownCategoryIds = new Set(products.map((product) => String(product.category.id)));
     const knownCategoryNames = new Set(products.map((product) => product.category.name.toLowerCase()));
@@ -157,7 +158,7 @@ function HomeContent() {
     }
 
     return result;
-  }, [products, query, selectedCategory, minPrice, maxPrice, stockFilter, sortBy]);
+  }, [products, deferredQuery, selectedCategory, minPrice, maxPrice, stockFilter, sortBy]);
 
   const totalInStock = useMemo(() => products.filter((product) => isInStock(product)).length, [products]);
 
@@ -273,11 +274,7 @@ function HomeContent() {
         <p className="rounded-xl bg-white p-4 text-sm text-slate-600">No products matched these filters. Try widening your criteria.</p>
       ) : null}
 
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {filtered.map((product) => (
-          <ProductCard key={product.id} product={product} />
-        ))}
-      </div>
+      <VirtualizedProductGrid products={filtered} />
     </section>
   );
 }

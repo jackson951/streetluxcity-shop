@@ -1,20 +1,23 @@
 "use client";
 
+import { api } from "@/lib/api";
+import { Category } from "@/lib/types";
 import { useAuth } from "@/contexts/auth-context";
 import { useCart } from "@/contexts/cart-context";
-import { LogIn, LogOut, Menu, Shield, ShoppingBag, ShoppingCart, UserRound, UserPlus, X } from "lucide-react";
+import { ChevronDown, LogIn, LogOut, Menu, Shield, ShoppingBag, ShoppingCart, UserRound, UserPlus, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export function Navbar() {
   const { user, isAdmin, hasAdminRole, viewMode, toggleViewMode, logout } = useAuth();
-  const { cart } = useCart();
+  const { cartQuantity } = useCart();
   const router = useRouter();
   const pathname = usePathname();
   const [hydrated, setHydrated] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const cartQuantity = cart?.items.reduce((sum, item) => sum + item.quantity, 0) ?? 0;
+  const [categoryMenuOpen, setCategoryMenuOpen] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
   const navLinks = [
     { href: "/", label: "Products" },
     { href: "/orders", label: "Orders" }
@@ -27,7 +30,15 @@ export function Navbar() {
   useEffect(() => {
     if (!hydrated) return;
     setMenuOpen(false);
+    setCategoryMenuOpen(false);
   }, [pathname, hydrated]);
+
+  useEffect(() => {
+    api
+      .listCategories()
+      .then((data) => setCategories(data))
+      .catch(() => setCategories([]));
+  }, []);
 
   const resolvedPathname = hydrated ? pathname : "";
   const resolvedUser = hydrated ? user : null;
@@ -55,6 +66,35 @@ export function Navbar() {
               {resolvedViewMode === "ADMIN" ? "Switch to Customer View" : "Switch to Admin View"}
             </button>
           ) : null}
+          <div className="relative">
+            <button
+              onClick={() => setCategoryMenuOpen((v) => !v)}
+              className={`inline-flex items-center gap-1 rounded-lg px-3 py-2 transition ${
+                resolvedPathname.startsWith("/categories/") ? "bg-brand-50 text-brand-700" : "text-slate-700 hover:bg-slate-100"
+              }`}
+              aria-expanded={categoryMenuOpen}
+              aria-haspopup="menu"
+            >
+              Categories
+              <ChevronDown className={`h-4 w-4 transition ${categoryMenuOpen ? "rotate-180" : ""}`} />
+            </button>
+            {categoryMenuOpen ? (
+              <div className="absolute left-0 top-12 z-50 w-64 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">
+                <div className="max-h-80 overflow-auto pr-1">
+                  {categories.map((category) => (
+                    <Link
+                      key={category.id}
+                      href={`/categories/${category.id}`}
+                      className="block rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-100"
+                    >
+                      {category.name}
+                    </Link>
+                  ))}
+                  {!categories.length ? <p className="px-3 py-2 text-xs text-slate-500">No categories available.</p> : null}
+                </div>
+              </div>
+            ) : null}
+          </div>
           {navLinks.map((link) => {
             const active = resolvedPathname === link.href;
             return (
@@ -134,6 +174,21 @@ export function Navbar() {
               {resolvedViewMode === "ADMIN" ? "Customer View" : "Admin View"}
             </button>
           ) : null}
+          <div className="rounded-lg border border-slate-200">
+            <p className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Categories</p>
+            <div className="grid gap-1 px-2 pb-2">
+              {categories.slice(0, 8).map((category) => (
+                <Link
+                  key={category.id}
+                  href={`/categories/${category.id}`}
+                  className="rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-100"
+                >
+                  {category.name}
+                </Link>
+              ))}
+              {!categories.length ? <p className="px-3 py-2 text-xs text-slate-500">No categories available.</p> : null}
+            </div>
+          </div>
           {navLinks.map((link) => (
             <Link key={link.href} href={link.href} className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700">
               {link.label}
