@@ -61,7 +61,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const isGuest = !user;
   const isGuestCart = isGuest && !token;
 
-  const refreshCart = useCallback(async () => {
+
+const refreshCart = useCallback(async () => {
     if (isGuestCart) {
       const items = readGuestCart();
       setCart({

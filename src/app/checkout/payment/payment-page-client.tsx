@@ -10,6 +10,7 @@ import { CheckCircle2, CreditCard, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCart } from "@/contexts/cart-context";
 
 function getSessionStatusLabel(status?: string) {
   switch (status) {
@@ -53,6 +54,7 @@ export function CheckoutPaymentClient() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [idempotencyKey] = useState(() => crypto.randomUUID());
+  const{refreshCart}=useCart();
 
   const defaultMethod = useMemo(
     () =>
@@ -284,6 +286,7 @@ export function CheckoutPaymentClient() {
                       idempotencyKey,
                     );
                     if (result.status === "APPROVED") {
+                      refreshCart(); // Refresh cart after successful checkout
                       const finalized = await api.finalizeCheckoutSession(
                         token,
                         session.checkoutSessionId,
@@ -293,6 +296,7 @@ export function CheckoutPaymentClient() {
                         "Payment approved. Order created. Redirecting...",
                       );
                       router.push(`/orders/${finalized.orderId}`);
+                     
                     } else {
                       setError(result.gatewayMessage || "Payment declined.");
                     }
