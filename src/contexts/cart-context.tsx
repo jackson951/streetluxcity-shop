@@ -29,6 +29,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const refreshCart = useCallback(async () => {
     if (!token || !effectiveCustomerId) {
       setCart(null);
+      setOptimisticQuantityDelta(0);
       return;
     }
     setLoading(true);
@@ -47,9 +48,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     async (nextCart: Cart | null | undefined) => {
       if (nextCart && Array.isArray(nextCart.items)) {
         setCart(nextCart);
-        setOptimisticQuantityDelta(0);
-        return;
       }
+      // Always re-fetch after mutations so the navbar/cart badge stays in sync with server state.
       await refreshCart();
       setOptimisticQuantityDelta(0);
     },
