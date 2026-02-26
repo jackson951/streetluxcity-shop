@@ -125,7 +125,8 @@ export type PaymentMethod = {
 
 export type PaymentTransaction = {
   id: string;
-  orderId: string;
+  orderId?: string;
+  checkoutSessionId?: string;
   customerId: string;
   paymentMethodId: string;
   status: PaymentStatus;
@@ -134,6 +135,45 @@ export type PaymentTransaction = {
   gatewayResponseCode?: string;
   gatewayMessage?: string;
   processedAt: string;
+};
+
+export type CheckoutSessionStatus =
+  | "INITIATED"
+  | "PAYMENT_PENDING"
+  | "APPROVED"
+  | "FAILED"
+  | "EXPIRED"
+  | "CONSUMED";
+
+export type CheckoutSessionItem = {
+  productId: string;
+  productName: string;
+  quantity: number;
+  unitPrice: number;
+  subtotal: number;
+};
+
+export type CheckoutSession = {
+  id: string;
+  customerId?: string;
+  status: CheckoutSessionStatus;
+  totalAmount: number;
+  currency?: string;
+  createdAt?: string;
+  expiresAt?: string;
+  items: CheckoutSessionItem[];
+};
+
+export type CheckoutSessionPayResponse = {
+  status: PaymentStatus;
+  gatewayResponseCode?: string;
+  gatewayMessage?: string;
+  paymentTransactionId?: string;
+};
+
+export type FinalizeCheckoutSessionResponse = {
+  orderId: string;
+  orderNumber?: string;
 };
 
 export type AdminUser = {

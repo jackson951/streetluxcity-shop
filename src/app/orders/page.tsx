@@ -90,14 +90,6 @@ export default function OrdersPage() {
                 >
                   View order details
                 </Link>
-                {!isAdmin && order.status === "ORDER_RECEIVED" ? (
-                  <Link
-                    href={`/checkout/payment?orderId=${order.id}`}
-                    className="inline-flex rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-700"
-                  >
-                    Pay for order
-                  </Link>
-                ) : null}
               </div>
             </article>
           ))}

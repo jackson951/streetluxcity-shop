@@ -4,7 +4,10 @@ import {
   AuthResponse,
   Cart,
   Category,
+  CheckoutSession,
+  CheckoutSessionPayResponse,
   CustomerProfile,
+  FinalizeCheckoutSessionResponse,
   Order,
   OrderStatus,
   OrderTracking,
@@ -211,9 +214,24 @@ export const api = {
     return cart;
   },
   checkout: async (token: string, customerId: string) => {
-    const order = await request<Order>(`/customers/${customerId}/orders/checkout`, "POST", token);
+    const session = await request<CheckoutSession>(`/customers/${customerId}/orders/checkout`, "POST", token);
     invalidateGetCache([`/customers/${customerId}/cart`, `/customers/${customerId}/orders`, "/admin/orders"]);
-    return order;
+    return session;
+  },
+  createCheckoutSession: async (token: string) => {
+    return request<CheckoutSession>("/checkout/sessions", "POST", token, {});
+  },
+  getCheckoutSession: (token: string, sessionId: string) => request<CheckoutSession>(`/checkout/sessions/${sessionId}`, "GET", token),
+  payCheckoutSession: async (token: string, sessionId: string, paymentMethodId: string, cvv: string) => {
+    return request<CheckoutSessionPayResponse>(`/checkout/sessions/${sessionId}/pay`, "POST", token, {
+      paymentMethodId,
+      cvv
+    });
+  },
+  finalizeCheckoutSession: async (token: string, sessionId: string) => {
+    const finalized = await request<FinalizeCheckoutSessionResponse>(`/checkout/sessions/${sessionId}/finalize`, "POST", token, {});
+    invalidateGetCache(["/admin/orders", `/orders/${finalized.orderId}`, `/orders/${finalized.orderId}/tracking`]);
+    return finalized;
   },
   listOrders: (token: string, customerId: string) => request<Order[]>(`/customers/${customerId}/orders`, "GET", token),
   getOrder: (token: string, orderId: string) => request<Order>(`/orders/${orderId}`, "GET", token),

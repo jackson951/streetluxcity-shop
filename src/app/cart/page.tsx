@@ -1,6 +1,5 @@
 "use client";
 
-import { RequireAuth } from "@/components/route-guards";
 import { useAuth } from "@/contexts/auth-context";
 import { useCart } from "@/contexts/cart-context";
 import { formatCurrency } from "@/lib/utils";
@@ -9,25 +8,28 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function CartPage() {
-  const { canUseCustomerFeatures, hasAdminRole, viewMode } = useAuth();
-  const { cart, loading, mutating, updateItem, removeItem, checkout } = useCart();
+  const { user, canUseCustomerFeatures, hasAdminRole, viewMode } = useAuth();
+  const { cart, isGuestCart, loading, mutating, updateItem, removeItem, checkout } = useCart();
   const router = useRouter();
   const [message, setMessage] = useState<string | null>(null);
   const [updatingItemId, setUpdatingItemId] = useState<string | null>(null);
+  const canCheckout = Boolean(user && canUseCustomerFeatures && !isGuestCart);
 
   return (
-    <RequireAuth>
-      <section className="space-y-4">
-        <h1 className="text-3xl font-semibold">Your Cart</h1>
-        {!canUseCustomerFeatures ? (
-          <p className="rounded-xl bg-white p-4 text-sm">
-            {hasAdminRole && viewMode === "ADMIN"
-              ? "Switch to Customer View from the header to use cart and checkout."
-              : "Only customer accounts can use the cart and checkout flow."}
-          </p>
-        ) : null}
-        {canUseCustomerFeatures ? (
-          <>
+    <section className="space-y-4">
+      <h1 className="text-3xl font-semibold">Your Cart</h1>
+      {!user ? (
+        <p className="rounded-xl bg-amber-50 p-4 text-sm text-amber-800">
+          You are shopping as guest. You can add and edit items now, then login to checkout.
+        </p>
+      ) : null}
+      {user && !canUseCustomerFeatures ? (
+        <p className="rounded-xl bg-white p-4 text-sm">
+          {hasAdminRole && viewMode === "ADMIN"
+            ? "Switch to Customer View from the header to use cart and checkout."
+            : "Only customer accounts can use the cart and checkout flow."}
+        </p>
+      ) : null}
         {loading && <p>Loading cart...</p>}
         {!cart?.items.length && !loading && <p className="rounded-xl bg-white p-4">Your cart is empty.</p>}
 
@@ -86,34 +88,37 @@ export default function CartPage() {
         {cart?.items.length ? (
           <div className="flex items-center justify-between rounded-xl bg-white p-4">
             <p className="text-lg font-semibold">Total: {formatCurrency(cart.totalAmount)}</p>
-            <button
-              onClick={async () => {
-                try {
+            {canCheckout ? (
+              <button
+                onClick={async () => {
+                  try {
                     setMessage(null);
-                    const orderId = await checkout();
-                    setMessage(`Checkout successful. Order #${orderId} created. Redirecting to payment...`);
-                    router.push(`/checkout/payment?orderId=${orderId}`);
+                    const { sessionId } = await checkout();
+                    setMessage("Checkout session created. Redirecting to payment...");
+                    router.push(`/checkout/payment?sessionId=${sessionId}`);
                   } catch (err) {
                     setMessage((err as Error).message);
                   }
-              }}
-              disabled={mutating}
-              className="rounded-lg bg-brand-600 px-4 py-2 text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:bg-slate-300"
-            >
-              {mutating ? "Processing..." : "Checkout"}
-            </button>
+                }}
+                disabled={mutating}
+                className="rounded-lg bg-brand-600 px-4 py-2 text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+              >
+                {mutating ? "Processing..." : "Checkout"}
+              </button>
+            ) : (
+              <Link href="/login" className="rounded-lg bg-brand-600 px-4 py-2 text-white hover:bg-brand-700">
+                Login to Checkout
+              </Link>
+            )}
           </div>
         ) : null}
 
         {message && <p className="text-sm text-slate-600">{message}</p>}
-        {message?.includes("Checkout successful") ? (
-          <Link href="/orders" className="inline-flex text-sm font-medium text-brand-700 hover:text-brand-800">
-            View order history
+        {message?.includes("session created") ? (
+          <Link href="/checkout/payment" className="inline-flex text-sm font-medium text-brand-700 hover:text-brand-800">
+            Open payment screen
           </Link>
         ) : null}
-          </>
-        ) : null}
-      </section>
-    </RequireAuth>
+    </section>
   );
 }

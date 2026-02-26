@@ -4,22 +4,40 @@ import { PaymentMethodForm } from "@/components/payment-method-form";
 import { RequireAuth } from "@/components/route-guards";
 import { useAuth } from "@/contexts/auth-context";
 import { api } from "@/lib/api";
-import { getOrderStatusLabel } from "@/lib/order-tracking";
-import { Order, PaymentMethod, PaymentTransaction } from "@/lib/types";
+import { CheckoutSession, PaymentMethod } from "@/lib/types";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { CheckCircle2, CreditCard, ShieldCheck } from "lucide-react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+function getSessionStatusLabel(status?: string) {
+  switch (status) {
+    case "INITIATED":
+      return "Awaiting Payment";
+    case "PAYMENT_PENDING":
+      return "Payment Pending";
+    case "APPROVED":
+      return "Approved - Ready to Finalize";
+    case "FAILED":
+      return "Payment Failed";
+    case "EXPIRED":
+      return "Session Expired";
+    case "CONSUMED":
+      return "Order Created";
+    default:
+      return status || "Unknown";
+  }
+}
+
 export function CheckoutPaymentClient() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const { token, effectiveCustomerId, canUseCustomerFeatures, hasAdminRole, viewMode } = useAuth();
-  const orderId = searchParams.get("orderId") || "";
+  const sessionId = searchParams.get("sessionId") || "";
 
-  const [order, setOrder] = useState<Order | null>(null);
+  const [session, setSession] = useState<CheckoutSession | null>(null);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
-  const [payments, setPayments] = useState<PaymentTransaction[]>([]);
   const [selectedMethodId, setSelectedMethodId] = useState<string | null>(null);
   const [cvv, setCvv] = useState("");
   const [loading, setLoading] = useState(true);
@@ -34,27 +52,25 @@ export function CheckoutPaymentClient() {
   );
 
   const loadData = useCallback(async () => {
-    if (!token || !effectiveCustomerId || !orderId) {
+    if (!token || !effectiveCustomerId || !sessionId) {
       setLoading(false);
       return;
     }
     setLoading(true);
     setError(null);
     try {
-      const [orderData, methodsData, paymentsData] = await Promise.all([
-        api.getOrder(token, orderId),
-        api.listPaymentMethods(token, effectiveCustomerId),
-        api.listOrderPayments(token, orderId)
+      const [sessionData, methodsData] = await Promise.all([
+        api.getCheckoutSession(token, sessionId),
+        api.listPaymentMethods(token, effectiveCustomerId)
       ]);
-      setOrder(orderData);
+      setSession(sessionData);
       setPaymentMethods(methodsData);
-      setPayments(paymentsData);
     } catch (loadError) {
       setError((loadError as Error).message);
     } finally {
       setLoading(false);
     }
-  }, [token, effectiveCustomerId, orderId]);
+  }, [token, effectiveCustomerId, sessionId]);
 
   useEffect(() => {
     loadData().catch(() => undefined);
@@ -66,8 +82,7 @@ export function CheckoutPaymentClient() {
     }
   }, [defaultMethod, selectedMethodId]);
 
-  const hasApprovedPayment = payments.some((payment) => payment.status === "APPROVED");
-  const canPayOrder = order?.status === "ORDER_RECEIVED" && !hasApprovedPayment;
+  const canPaySession = session?.status === "INITIATED" || session?.status === "PAYMENT_PENDING" || session?.status === "FAILED";
   const cvvValid = /^\d{3,4}$/.test(cvv.trim());
 
   return (
@@ -87,8 +102,8 @@ export function CheckoutPaymentClient() {
               : "Only customer accounts can process checkout payments."}
           </p>
         ) : null}
-        {!orderId ? (
-          <p className="rounded-xl bg-red-50 p-4 text-sm text-red-700">Missing order ID. Open checkout from the cart page.</p>
+        {!sessionId ? (
+          <p className="rounded-xl bg-red-50 p-4 text-sm text-red-700">Missing checkout session ID. Start checkout from the cart page.</p>
         ) : null}
 
         {loading ? (
@@ -97,26 +112,26 @@ export function CheckoutPaymentClient() {
         {error ? <p className="rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</p> : null}
         {message ? <p className="rounded-xl bg-emerald-50 p-4 text-sm text-emerald-700">{message}</p> : null}
 
-        {order ? (
+        {session ? (
           <div className="grid gap-6 lg:grid-cols-2">
             <article className="space-y-4 rounded-3xl border border-slate-200/80 bg-white/90 p-5 shadow-sm">
-              <h2 className="text-xl font-semibold text-slate-900">Order summary</h2>
+              <h2 className="text-xl font-semibold text-slate-900">Checkout summary</h2>
               <div className="rounded-2xl bg-slate-50 p-4">
-                <p className="text-sm text-slate-500">{order.orderNumber}</p>
-                <p className="text-2xl font-bold text-brand-700">{formatCurrency(order.totalAmount)}</p>
-                <p className="text-xs text-slate-500">{formatDate(order.createdAt)}</p>
+                <p className="text-sm text-slate-500">Session #{session.id.slice(0, 8)}</p>
+                <p className="text-2xl font-bold text-brand-700">{formatCurrency(session.totalAmount)}</p>
+                {session.createdAt ? <p className="text-xs text-slate-500">{formatDate(session.createdAt)}</p> : null}
                 <p
                   className={`mt-2 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${
-                    order.status === "DELIVERED" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
+                    session.status === "CONSUMED" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
                   }`}
                 >
-                  {order.status === "DELIVERED" ? <CheckCircle2 className="h-3.5 w-3.5" /> : <ShieldCheck className="h-3.5 w-3.5" />}
-                  {getOrderStatusLabel(order.status)}
+                  {session.status === "CONSUMED" ? <CheckCircle2 className="h-3.5 w-3.5" /> : <ShieldCheck className="h-3.5 w-3.5" />}
+                  {getSessionStatusLabel(session.status)}
                 </p>
               </div>
               <ul className="space-y-2 text-sm">
-                {order.items.map((item) => (
-                  <li key={item.id} className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2">
+                {session.items.map((item) => (
+                  <li key={item.productId} className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2">
                     <span>
                       {item.productName} x {item.quantity}
                     </span>
@@ -125,11 +140,11 @@ export function CheckoutPaymentClient() {
                 ))}
               </ul>
               <div className="flex flex-wrap gap-2">
-                <Link href={`/orders/${order.id}`} className="rounded-lg border border-slate-300 px-3 py-2 text-sm hover:bg-slate-50">
-                  View order details
-                </Link>
                 <Link href="/orders" className="rounded-lg border border-slate-300 px-3 py-2 text-sm hover:bg-slate-50">
                   Back to orders
+                </Link>
+                <Link href="/cart" className="rounded-lg border border-slate-300 px-3 py-2 text-sm hover:bg-slate-50">
+                  Back to cart
                 </Link>
               </div>
             </article>
@@ -162,7 +177,7 @@ export function CheckoutPaymentClient() {
                       name="payment-method"
                       checked={selectedMethodId === method.id}
                       onChange={() => setSelectedMethodId(method.id)}
-                      disabled={!method.enabled || !canPayOrder}
+                      disabled={!method.enabled || !canPaySession}
                     />
                   </label>
                 ))}
@@ -175,12 +190,12 @@ export function CheckoutPaymentClient() {
                   onChange={(e) => setCvv(e.target.value)}
                   className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none ring-brand-500 focus:ring"
                   placeholder="123"
-                  disabled={!canPayOrder}
+                  disabled={!canPaySession}
                 />
               </label>
 
               <button
-                disabled={processing || !canPayOrder || !selectedMethodId || !cvvValid}
+                disabled={processing || !canPaySession || !selectedMethodId || !cvvValid}
                 className="w-full rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:bg-slate-300"
                 onClick={async () => {
                   if (!token || !selectedMethodId) {
@@ -195,14 +210,15 @@ export function CheckoutPaymentClient() {
                   setError(null);
                   setMessage(null);
                   try {
-                    const result = await api.processOrderPayment(token, order.id, selectedMethodId, cvv);
-                    setPayments(await api.listOrderPayments(token, order.id));
-                    setOrder(await api.getOrder(token, order.id));
+                    const result = await api.payCheckoutSession(token, session.id, selectedMethodId, cvv);
                     if (result.status === "APPROVED") {
-                      setMessage("Payment approved. Admin can now progress delivery tracking stages.");
+                      const finalized = await api.finalizeCheckoutSession(token, session.id);
+                      setMessage("Payment approved. Order created. Redirecting...");
+                      router.push(`/orders/${finalized.orderId}`);
                     } else {
                       setError(result.gatewayMessage || "Payment declined.");
                     }
+                    setSession(await api.getCheckoutSession(token, session.id));
                   } catch (processError) {
                     setError((processError as Error).message);
                   } finally {
@@ -210,35 +226,17 @@ export function CheckoutPaymentClient() {
                   }
                 }}
               >
-                {processing ? "Processing..." : !canPayOrder ? "Payment unavailable for this stage" : `Pay ${formatCurrency(order.totalAmount)}`}
+                {processing ? "Processing..." : !canPaySession ? "Payment unavailable for this session" : `Pay ${formatCurrency(session.totalAmount)}`}
               </button>
-              {canPayOrder && !cvvValid ? <p className="text-xs text-amber-700">Enter a valid CVV to enable payment.</p> : null}
-              {!canPayOrder ? <p className="text-xs text-slate-600">Payment is only allowed at Order Received stage.</p> : null}
+              {canPaySession && !cvvValid ? <p className="text-xs text-amber-700">Enter a valid CVV to enable payment.</p> : null}
+              {!canPaySession ? <p className="text-xs text-slate-600">This checkout session can no longer be paid.</p> : null}
 
               <div className="rounded-2xl bg-slate-50 p-3 text-xs text-slate-600">
                 <p className="font-medium text-slate-800">Payment flow notes</p>
-                <p className="mt-1">Approved payment no longer changes tracking status. Tracking advances stage-by-stage via admin updates.</p>
+                <p className="mt-1">Payment approval finalizes this checkout session and creates the order atomically.</p>
               </div>
 
-              <details className="rounded-xl border border-slate-200 p-3">
-                <summary className="cursor-pointer text-sm font-medium">Recent payment attempts</summary>
-                <div className="mt-3 space-y-2 text-sm">
-                  {payments.length ? null : <p className="text-slate-500">No attempts yet.</p>}
-                  {payments.map((payment) => (
-                    <div key={payment.id} className="rounded-lg border border-slate-200 px-3 py-2">
-                      <p className={`font-medium ${payment.status === "APPROVED" ? "text-emerald-700" : "text-red-700"}`}>
-                        {payment.status}
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        {payment.gatewayResponseCode || "N/A"} | {payment.gatewayMessage || "No gateway message"}
-                      </p>
-                      <p className="text-xs text-slate-500">{formatDate(payment.processedAt)}</p>
-                    </div>
-                  ))}
-                </div>
-              </details>
-
-              {canPayOrder ? (
+              {canPaySession ? (
                 <details className="rounded-xl border border-slate-200 p-3">
                   <summary className="cursor-pointer text-sm font-medium">Add a new card</summary>
                   <div className="mt-3">

@@ -9,10 +9,11 @@ export const ORDER_TRACKING_FLOW: OrderStatus[] = [
   "DELIVERED"
 ];
 
-export function getOrderStatusLabel(status: OrderStatus | string) {
+export function getOrderStatusLabel(status: OrderStatus | string, options?: { paymentApproved?: boolean }) {
+  const paymentApproved = options?.paymentApproved ?? false;
   switch (status) {
     case "ORDER_RECEIVED":
-      return "Order Received";
+      return paymentApproved ? "Order Received" : "Awaiting Payment";
     case "PROCESSING_PACKING":
       return "Processing / Packing";
     case "SHIPPED":
@@ -35,4 +36,3 @@ export function getNextTrackingStatus(status: OrderStatus | string): OrderStatus
   if (index < 0 || index >= ORDER_TRACKING_FLOW.length - 1) return null;
   return ORDER_TRACKING_FLOW[index + 1];
 }
-

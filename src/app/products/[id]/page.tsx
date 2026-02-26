@@ -12,7 +12,7 @@ import { useEffect, useState } from "react";
 export default function ProductDetailPage() {
   const params = useParams<{ id: string }>();
   const { addItem, mutating } = useCart();
-  const { canUseCustomerFeatures, hasAdminRole, viewMode } = useAuth();
+  const { user, canUseCustomerFeatures, hasAdminRole, viewMode } = useAuth();
   const [product, setProduct] = useState<Product | null>(null);
   const [qty, setQty] = useState(1);
   const [message, setMessage] = useState<string | null>(null);
@@ -78,7 +78,7 @@ export default function ProductDetailPage() {
           <button
             onClick={async () => {
               if (!inStock) return setMessage("This product is currently out of stock.");
-              if (!canUseCustomerFeatures) {
+              if (user && !canUseCustomerFeatures) {
                 return setMessage(
                   hasAdminRole && viewMode === "ADMIN"
                     ? "Switch to Customer View to add items."
