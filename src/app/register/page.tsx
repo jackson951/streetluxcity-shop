@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/contexts/auth-context";
 import { getFirstValidationError, registerSchema } from "@/lib/validation";
-import { ArrowRight, Chrome, Eye, EyeOff, Sparkles } from "lucide-react";
+import { ArrowRight, Chrome, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
@@ -48,23 +48,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <section className="relative isolate mx-auto grid max-w-5xl overflow-hidden rounded-3xl border border-slate-200/70 bg-white/85 shadow-xl backdrop-blur md:grid-cols-[1.05fr_1fr]">
-      <div className="relative hidden overflow-hidden bg-gradient-to-br from-cyan-700 via-sky-600 to-brand-700 p-8 text-white md:block">
-        <div className="absolute -left-14 top-4 h-52 w-52 rounded-full bg-white/10 blur-2xl" />
-        <div className="absolute -bottom-12 right-4 h-56 w-56 rounded-full bg-cyan-300/20 blur-2xl" />
-        <div className="relative space-y-5">
-          <p className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium uppercase tracking-wide">
-            <Sparkles className="h-3.5 w-3.5" />
-            New Account
-          </p>
-          <h1 className="text-4xl font-semibold leading-tight">Create your shopping account</h1>
-          <p className="max-w-sm text-sm text-sky-50/90">
-            Save addresses, track all order stages, and manage payment methods from one profile.
-          </p>
-        </div>
-      </div>
-
-      <div className="p-6 sm:p-8">
+    <section className="mx-auto w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200/70 bg-white/85 p-6 shadow-xl backdrop-blur sm:p-8">
         <div className="space-y-2">
           <h2 className="text-2xl font-semibold text-slate-900">Create account</h2>
           <p className="text-sm text-slate-600">Join StreetLuxCity in a few quick steps.</p>
@@ -174,7 +158,6 @@ export default function RegisterPage() {
             Sign in
           </Link>
         </p>
-      </div>
     </section>
   );
 }
