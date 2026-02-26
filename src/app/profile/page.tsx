@@ -263,13 +263,13 @@ export default function ProfilePage() {
           </div>
         ) : null}
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-600">
+        {/* <div className="rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-600">
           <p className="font-medium text-slate-800">Account access</p>
           <p className="mt-2">
             Self-disable is not yet exposed by backend API. Admins can disable user access from the admin users screen.
             {hasAdminRole ? " You can do this from Admin > Users." : ""}
           </p>
-        </div>
+        </div> */}
       </section>
     </RequireAuth>
   );
