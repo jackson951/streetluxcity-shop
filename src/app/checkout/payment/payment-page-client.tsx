@@ -104,15 +104,7 @@ export function CheckoutPaymentClient() {
   return (
     <RequireAuth>
       <section className="space-y-6">
-        <div className="rounded-3xl border border-slate-200/80 bg-white/90 p-6 shadow-sm backdrop-blur">
-          <h1 className="text-3xl font-semibold text-slate-900">
-            Checkout Payment
-          </h1>
-          <p className="mt-1 text-sm text-slate-600">
-            Flow: cart checkout creates an order, then payment authorizes it.
-            Declines are safe to retry with another method.
-          </p>
-        </div>
+      
 
         {!canUseCustomerFeatures ? (
           <p className="rounded-xl bg-amber-50 p-4 text-sm text-amber-800">
