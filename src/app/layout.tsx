@@ -19,7 +19,7 @@ const bodyFont = Manrope({
 
 export const metadata: Metadata = {
   title: "StreetLuxCity Marketplace",
-  description: "Enterprise-grade ecommerce demo storefront"
+  description: "Your trusted clothing store"
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

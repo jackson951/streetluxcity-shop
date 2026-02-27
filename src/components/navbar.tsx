@@ -98,7 +98,6 @@ export function Navbar() {
             <span className="h-1 w-1 rounded-full bg-slate-500" />
             <span>Fast fulfillment</span>
             <span className="h-1 w-1 rounded-full bg-slate-500" />
-            <span>Enterprise demo store</span>
           </div>
         </div>
       </div>
