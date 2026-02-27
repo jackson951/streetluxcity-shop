@@ -3,7 +3,7 @@ import { CheckoutPaymentClient } from "./payment-page-client";
 
 export default function CheckoutPaymentPage() {
   return (
-    <Suspense fallback={<div className="rounded-xl bg-white p-4 text-sm text-slate-600">Loading payment screen...</div>}>
+    <Suspense fallback={<div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">Loading payment screen...</div>}>
       <CheckoutPaymentClient />
     </Suspense>
   );

@@ -3,6 +3,7 @@
 import { VirtualizedProductGrid } from "@/components/virtualized-product-grid";
 import { api } from "@/lib/api";
 import { Category, Product } from "@/lib/types";
+import { BarChart3, Flame, ShieldCheck, Truck } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useDeferredValue, useEffect, useMemo, useState } from "react";
 
@@ -56,6 +57,22 @@ function HomeContent() {
       .catch((err) => setError((err as Error).message))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    const nextQuery = searchParams.get("q") || "";
+    const nextCategory = searchParams.get("category") || "all";
+    const nextMin = searchParams.get("minPrice") || "";
+    const nextMax = searchParams.get("maxPrice") || "";
+    const nextStock = parseStockFilter(searchParams.get("stock"));
+    const nextSort = parseSortOption(searchParams.get("sort"));
+
+    if (nextQuery !== query) setQuery(nextQuery);
+    if (nextCategory !== selectedCategory) setSelectedCategory(nextCategory);
+    if (nextMin !== minPrice) setMinPrice(nextMin);
+    if (nextMax !== maxPrice) setMaxPrice(nextMax);
+    if (nextStock !== stockFilter) setStockFilter(nextStock);
+    if (nextSort !== sortBy) setSortBy(nextSort);
+  }, [searchParams, query, selectedCategory, minPrice, maxPrice, stockFilter, sortBy]);
 
   useEffect(() => {
     const safeStock = parseStockFilter(stockFilter);
@@ -172,27 +189,87 @@ function HomeContent() {
   }
 
   return (
-    <section className="space-y-8">
-      <div className="space-y-3">
-        <h2 className="text-2xl font-semibold">Browse Products</h2>
-        <p className="text-sm text-slate-600">
-          Explore by category and refine by search, price, availability, and sorting.
-        </p>
+    <section className="space-y-6">
+      <div className="grid gap-4 lg:grid-cols-[1.7fr_1fr]">
+        <article className="overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-r from-slate-950 via-slate-900 to-brand-700 text-white">
+          <div className="grid gap-6 p-6 sm:p-8 lg:grid-cols-[1.4fr_1fr]">
+            <div className="space-y-4">
+              <p className="inline-flex rounded-full border border-white/25 px-3 py-1 text-xs uppercase tracking-[0.16em] text-amber-300">
+                Marketplace Week
+              </p>
+              <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Discover high-demand products at retail scale.</h1>
+              <p className="max-w-xl text-sm text-slate-200 sm:text-base">
+                Enterprise-ready catalog browsing, dynamic checkout sessions, and robust order lifecycle management.
+              </p>
+              <div className="flex flex-wrap gap-2 text-xs text-slate-200 sm:text-sm">
+                <span className="rounded-full bg-white/10 px-3 py-1">Real-time stock indicators</span>
+                <span className="rounded-full bg-white/10 px-3 py-1">Role-aware customer/admin flows</span>
+                <span className="rounded-full bg-white/10 px-3 py-1">High-volume catalog virtualization</span>
+              </div>
+            </div>
+            <div className="grid gap-2 rounded-2xl border border-white/15 bg-slate-950/45 p-4">
+              <p className="text-xs uppercase tracking-wide text-slate-300">Marketplace health</p>
+              <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-1">
+                <div className="rounded-xl bg-white/10 p-3">
+                  <p className="text-xs text-slate-300">Products</p>
+                  <p className="text-2xl font-semibold">{products.length}</p>
+                </div>
+                <div className="rounded-xl bg-white/10 p-3">
+                  <p className="text-xs text-slate-300">Departments</p>
+                  <p className="text-2xl font-semibold">{categories.length}</p>
+                </div>
+                <div className="rounded-xl bg-white/10 p-3">
+                  <p className="text-xs text-slate-300">In stock now</p>
+                  <p className="text-2xl font-semibold">{totalInStock}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
+          <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <p className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-emerald-700">
+              <Truck className="h-4 w-4" />
+              Fulfillment
+            </p>
+            <p className="mt-2 text-sm text-slate-700">Nationwide dispatch pipeline for reliable shipping operations.</p>
+          </article>
+          <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <p className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-brand-700">
+              <ShieldCheck className="h-4 w-4" />
+              Payments
+            </p>
+            <p className="mt-2 text-sm text-slate-700">Tokenized payment sessions with explicit status tracking.</p>
+          </article>
+          <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <p className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-amber-700">
+              <Flame className="h-4 w-4" />
+              Trending
+            </p>
+            <p className="mt-2 text-sm text-slate-700">High-intent category merchandising with conversion-first filters.</p>
+          </article>
+        </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 className="inline-flex items-center gap-2 text-base font-semibold text-slate-900 sm:text-lg">
+            <BarChart3 className="h-4 w-4 text-brand-600" />
+            Catalog control center
+          </h2>
+          <button onClick={resetFilters} className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50">
+            Reset all
+          </button>
+        </div>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search name, description, category"
+            placeholder="Search product, keyword or department"
             className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2 outline-none ring-brand-500 focus:ring xl:col-span-2"
           />
-          <select
-            value={stockFilter}
-            onChange={(e) => setStockFilter(e.target.value as StockFilter)}
-            className="rounded-xl border border-slate-300 bg-white px-4 py-2"
-          >
+          <select value={stockFilter} onChange={(e) => setStockFilter(e.target.value as StockFilter)} className="rounded-xl border border-slate-300 bg-white px-4 py-2">
             <option value="all">All stock</option>
             <option value="in-stock">In stock</option>
             <option value="out-of-stock">Out of stock</option>
@@ -213,11 +290,7 @@ function HomeContent() {
             placeholder="Max price"
             className="rounded-xl border border-slate-300 bg-white px-4 py-2"
           />
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as SortOption)}
-            className="rounded-xl border border-slate-300 bg-white px-4 py-2"
-          >
+          <select value={sortBy} onChange={(e) => setSortBy(e.target.value as SortOption)} className="rounded-xl border border-slate-300 bg-white px-4 py-2">
             <option value="relevance">Sort: Relevance</option>
             <option value="price-asc">Price: Low to High</option>
             <option value="price-desc">Price: High to Low</option>
@@ -230,11 +303,11 @@ function HomeContent() {
             onClick={resetFilters}
             className={`rounded-full border px-3 py-1 text-sm ${
               selectedCategory === "all"
-                ? "border-brand-600 bg-brand-600 text-white"
+                ? "border-slate-950 bg-slate-950 text-white"
                 : "border-slate-300 bg-white text-slate-700 hover:border-brand-400"
             }`}
           >
-            All categories ({products.length})
+            All departments ({products.length})
           </button>
           {categories.map((category) => {
             const active = selectedCategory === String(category.id) || selectedCategory.toLowerCase() === category.name.toLowerCase();
@@ -250,40 +323,31 @@ function HomeContent() {
               </button>
             );
           })}
-          <button
-            onClick={resetFilters}
-            className="ml-auto rounded-lg border border-slate-300 px-3 py-1 text-sm text-slate-700 hover:bg-slate-50"
-          >
-            Reset filters
-          </button>
         </div>
-      </div>
+      </article>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-slate-100 px-4 py-3 text-sm text-slate-700">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-100 px-4 py-3 text-sm text-slate-700">
         <p>
           Showing <span className="font-semibold">{filtered.length}</span> of <span className="font-semibold">{products.length}</span> products
         </p>
-        <p>
-          In stock now: <span className="font-semibold">{totalInStock}</span>
-        </p>
+        <p>Live inventory: <span className="font-semibold">{totalInStock}</span></p>
       </div>
 
       {error && <p className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
-      {loading && <p className="rounded-xl bg-white p-4 text-sm text-slate-600">Loading catalog...</p>}
+      {loading && <p className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">Loading catalog...</p>}
       {!loading && !error && !filtered.length ? (
-        <p className="rounded-xl bg-white p-4 text-sm text-slate-600">No products matched these filters. Try widening your criteria.</p>
+        <p className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">No products matched these filters. Try widening your criteria.</p>
       ) : null}
 
-      <VirtualizedProductGrid products={filtered} />
+      <VirtualizedProductGrid products={filtered} viewportClassName="h-[70vh]" />
     </section>
   );
 }
 
 export default function HomePage() {
   return (
-    <Suspense fallback={<div className="rounded-xl bg-white p-4 text-sm text-slate-600">Loading catalog...</div>}>
+    <Suspense fallback={<div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">Loading catalog...</div>}>
       <HomeContent />
     </Suspense>
   );
 }
-

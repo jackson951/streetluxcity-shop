@@ -1,27 +1,27 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-brand-50: #f3f8ff;
-  --color-brand-100: #dceaff;
-  --color-brand-500: #2376ff;
-  --color-brand-600: #155cdb;
-  --color-brand-700: #114db3;
+  --color-brand-50: #eff7ff;
+  --color-brand-100: #d7ebff;
+  --color-brand-500: #0b57d0;
+  --color-brand-600: #0a4cb4;
+  --color-brand-700: #093b89;
 }
 
 :root {
-  --bg: #edf4ff;
-  --fg: #0f172a;
-  --surface: rgba(255, 255, 255, 0.86);
-  --surface-border: rgba(148, 163, 184, 0.25);
+  --bg: #e8edf3;
+  --fg: #111827;
+  --surface: #ffffff;
+  --surface-border: #d6dde8;
 }
 
 body {
   min-height: 100vh;
   font-family: var(--font-body), "Segoe UI", sans-serif;
   background:
-    radial-gradient(circle at 8% -14%, rgba(21, 92, 219, 0.24), transparent 42%),
-    radial-gradient(circle at 100% -10%, rgba(35, 118, 255, 0.16), transparent 38%),
-    radial-gradient(circle at 50% 120%, rgba(14, 116, 144, 0.09), transparent 46%),
+    radial-gradient(circle at 0% -10%, rgba(11, 87, 208, 0.18), transparent 40%),
+    radial-gradient(circle at 100% 10%, rgba(5, 150, 105, 0.12), transparent 36%),
+    linear-gradient(180deg, #f5f8fc 0%, #e8edf3 48%, #e2e8f0 100%),
     var(--bg);
   color: var(--fg);
 }
@@ -34,6 +34,6 @@ h3 {
 }
 
 ::selection {
-  background: rgba(35, 118, 255, 0.2);
-  color: #0b2a64;
+  background: rgba(11, 87, 208, 0.22);
+  color: #081f4d;
 }

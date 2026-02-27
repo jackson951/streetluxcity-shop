@@ -7,6 +7,7 @@ import { ProductCard } from "./product-card";
 const OVERSCAN_ROWS = 3;
 
 function getColumnCount(width: number) {
+  if (width >= 1280) return 4;
   if (width >= 1024) return 3;
   if (width >= 640) return 2;
   return 1;
@@ -15,6 +16,7 @@ function getColumnCount(width: number) {
 function getEstimatedRowHeight(columns: number) {
   if (columns === 1) return 430;
   if (columns === 2) return 410;
+  if (columns === 4) return 370;
   return 390;
 }
 
@@ -82,7 +84,7 @@ export function VirtualizedProductGrid({
 
   if (products.length <= 18) {
     return (
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {products.map((product) => (
           <ProductCard key={product.id} product={product} />
         ))}
@@ -93,7 +95,7 @@ export function VirtualizedProductGrid({
   return (
     <div ref={viewportRef} className={`${viewportClassName} overflow-auto pr-1`}>
       <div style={{ height: topSpacer }} />
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {visibleProducts.map((product) => (
           <ProductCard key={product.id} product={product} />
         ))}

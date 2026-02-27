@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { api } from "@/lib/api";
 import { CheckoutSession, PaymentMethod } from "@/lib/types";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { CheckCircle2, CreditCard, ShieldCheck } from "lucide-react";
+import { CheckCircle2, Clock3, CreditCard, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -62,6 +62,8 @@ export function CheckoutPaymentClient() {
       paymentMethods.find((method) => method.enabled),
     [paymentMethods],
   );
+  const selectedMethod = paymentMethods.find((method) => method.id === selectedMethodId) || null;
+  const itemCount = useMemo(() => session?.items.reduce((sum, item) => sum + item.quantity, 0) || 0, [session?.items]);
 
   const loadData = useCallback(async () => {
     if (!token || !effectiveCustomerId || !sessionId || !hasValidSessionId) {
@@ -75,7 +77,6 @@ export function CheckoutPaymentClient() {
         api.getCheckoutSession(token, sessionId),
         api.listPaymentMethods(token, effectiveCustomerId),
       ]);
-      console.log("Loaded checkout session:", sessionData);
       setSession(sessionData);
       setPaymentMethods(methodsData);
     } catch (loadError) {
@@ -104,48 +105,66 @@ export function CheckoutPaymentClient() {
   return (
     <RequireAuth>
       <section className="space-y-6">
-      
+        <div className="overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-r from-slate-950 via-slate-900 to-brand-700 text-white">
+          <div className="grid gap-4 p-6 sm:p-8 lg:grid-cols-[1.2fr_1fr]">
+            <div>
+              <p className="text-xs uppercase tracking-[0.16em] text-amber-300">Secure checkout</p>
+              <h1 className="mt-2 text-3xl font-bold tracking-tight">Review and complete payment</h1>
+              <p className="mt-2 text-sm text-slate-200 sm:text-base">
+                Session-based payment with explicit approval and atomic order finalization.
+              </p>
+            </div>
+            <div className="rounded-2xl border border-white/15 bg-slate-950/40 p-4">
+              <p className="text-xs uppercase tracking-wide text-slate-300">Step flow</p>
+              <ol className="mt-3 space-y-2 text-sm text-slate-100">
+                <li className="rounded-lg bg-white/10 px-3 py-2">1. Verify checkout session</li>
+                <li className="rounded-lg bg-white/10 px-3 py-2">2. Choose payment method</li>
+                <li className="rounded-lg bg-white/10 px-3 py-2">3. Confirm and create order</li>
+              </ol>
+            </div>
+          </div>
+        </div>
 
         {!canUseCustomerFeatures ? (
-          <p className="rounded-xl bg-amber-50 p-4 text-sm text-amber-800">
+          <p className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
             {hasAdminRole && viewMode === "ADMIN"
               ? "Switch to Customer View from the header to process checkout payments."
               : "Only customer accounts can process checkout payments."}
           </p>
         ) : null}
         {!sessionId || !hasValidSessionId ? (
-          <p className="rounded-xl bg-red-50 p-4 text-sm text-red-700">
+          <p className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
             Invalid checkout session. Start checkout again from the cart page.
           </p>
         ) : null}
 
         {loading ? (
-          <p className="rounded-2xl border border-slate-200/80 bg-white/90 p-4 text-sm text-slate-600">
+          <p className="rounded-2xl border border-slate-200/80 bg-white p-4 text-sm text-slate-600">
             Loading payment details...
           </p>
         ) : null}
         {error ? (
-          <p className="rounded-xl bg-red-50 p-4 text-sm text-red-700">
+          <p className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
             {error}
           </p>
         ) : null}
         {message ? (
-          <p className="rounded-xl bg-emerald-50 p-4 text-sm text-emerald-700">
+          <p className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
             {message}
           </p>
         ) : null}
 
         {session ? (
-          <div className="grid gap-6 lg:grid-cols-2">
-            <article className="space-y-4 rounded-3xl border border-slate-200/80 bg-white/90 p-5 shadow-sm">
+          <div className="grid gap-6 xl:grid-cols-[1.25fr_1fr]">
+            <article className="space-y-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
               <h2 className="text-xl font-semibold text-slate-900">
                 Checkout summary
               </h2>
-              <div className="rounded-2xl bg-slate-50 p-4">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                 <p className="text-sm text-slate-500">
                   Session #{session?.checkoutSessionId?.slice(0, 8) ?? "N/A"}
                 </p>
-                <p className="text-2xl font-bold text-brand-700">
+                <p className="text-3xl font-bold text-slate-900">
                   {formatCurrency(session.amount)}
                 </p>
                 {session.createdAt ? (
@@ -199,11 +218,12 @@ export function CheckoutPaymentClient() {
               </div>
             </article>
 
-            <article className="space-y-4 rounded-3xl border border-slate-200/80 bg-white/90 p-5 shadow-sm">
+            <article className="space-y-4 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
               <h2 className="inline-flex items-center gap-2 text-xl font-semibold text-slate-900">
-                <CreditCard className="h-5 w-5 text-brand-600" />
-                Pay now
+                <CreditCard className="h-5 w-5 text-slate-900" />
+                Payment methods
               </h2>
+              <p className="text-sm text-slate-600">Items: {itemCount} | Session amount: {formatCurrency(session.amount)}</p>
 
               <div className="space-y-2">
                 {paymentMethods.length ? null : (
@@ -216,7 +236,7 @@ export function CheckoutPaymentClient() {
                     key={method.id}
                     className={`flex items-center justify-between rounded-xl border px-3 py-2 ${
                       method.enabled
-                        ? "border-slate-200"
+                        ? "border-slate-200 bg-white"
                         : "border-amber-300 bg-amber-50"
                     }`}
                   >
@@ -245,18 +265,26 @@ export function CheckoutPaymentClient() {
                 <span className="text-slate-600">CVV</span>
                 <input
                   value={cvv}
-                  onChange={(e) => setCvv(e.target.value)}
+                  onChange={(e) => setCvv(e.target.value.replace(/[^\d]/g, "").slice(0, 4))}
                   className="w-full rounded-xl border border-slate-300 px-3 py-2 outline-none ring-brand-500 focus:ring"
                   placeholder="123"
                   disabled={!canPaySession}
+                  inputMode="numeric"
+                  maxLength={4}
                 />
               </label>
+
+              {selectedMethod ? (
+                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                  Paying with <span className="font-semibold">{selectedMethod.brand} **** {selectedMethod.last4}</span>.
+                </div>
+              ) : null}
 
               <button
                 disabled={
                   processing || !canPaySession || !selectedMethodId || !cvvValid
                 }
-                className="w-full rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+                className="w-full rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
                 onClick={async () => {
                   if (!token || !selectedMethodId) {
                     setError("Choose a payment method first.");
@@ -288,7 +316,6 @@ export function CheckoutPaymentClient() {
                         "Payment approved. Order created. Redirecting...",
                       );
                       router.push(`/orders/${finalized.orderId}`);
-                     
                     } else {
                       setError(result.gatewayMessage || "Payment declined.");
                     }
@@ -306,7 +333,7 @@ export function CheckoutPaymentClient() {
                 }}
               >
                 {processing
-                  ? "Processing..."
+                  ? "Authorizing payment..."
                   : !canPaySession
                     ? "Payment unavailable for this session"
                     : `Pay ${formatCurrency(session.amount)}`}
@@ -322,8 +349,8 @@ export function CheckoutPaymentClient() {
                 </p>
               ) : null}
 
-              <div className="rounded-2xl bg-slate-50 p-3 text-xs text-slate-600">
-                <p className="font-medium text-slate-800">Payment flow notes</p>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+                <p className="inline-flex items-center gap-1 font-medium text-slate-800"><Clock3 className="h-4 w-4" /> Payment flow notes</p>
                 <p className="mt-1">
                   Payment approval finalizes this checkout session and creates
                   the order atomically.
