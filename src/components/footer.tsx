@@ -21,7 +21,7 @@ export function Footer() {
         </div>
         <div className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm">
           <ShieldCheck className="h-4 w-4 text-brand-400" />
-          Secure checkout and payment session controls
+          Secure checkout and payment session
         </div>
         <div className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm">
           <Headset className="h-4 w-4 text-amber-300" />

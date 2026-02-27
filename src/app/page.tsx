@@ -191,7 +191,7 @@ function HomeContent() {
   return (
     <section className="space-y-6">
       <div className="grid gap-4 lg:grid-cols-[1.7fr_1fr]">
-        <article className="overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-r from-slate-950 via-slate-900 to-brand-700 text-white">
+        {/* <article className="overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-r from-slate-950 via-slate-900 to-brand-700 text-white">
           <div className="grid gap-6 p-6 sm:p-8 lg:grid-cols-[1.4fr_1fr]">
             <div className="space-y-4">
               <p className="inline-flex rounded-full border border-white/25 px-3 py-1 text-xs uppercase tracking-[0.16em] text-amber-300">
@@ -225,9 +225,9 @@ function HomeContent() {
               </div>
             </div>
           </div>
-        </article>
+        </article> */}
 
-        <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
+        {/* <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-1">
           <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <p className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-emerald-700">
               <Truck className="h-4 w-4" />
@@ -249,7 +249,7 @@ function HomeContent() {
             </p>
             <p className="mt-2 text-sm text-slate-700">High-intent category merchandising with conversion-first filters.</p>
           </article>
-        </div>
+        </div> */}
       </div>
 
       <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
