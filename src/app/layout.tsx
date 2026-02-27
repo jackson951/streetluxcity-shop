@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { ClientErrorObserver } from "@/components/client-error-observer";
 import { Footer } from "@/components/footer";
 import { Providers } from "@/components/providers";
@@ -28,8 +29,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Providers>
           <ClientErrorObserver />
           <div className="flex min-h-screen flex-col">
-            <Navbar />
-            <main className="mx-auto w-full max-w-[1500px] flex-1 px-3 py-6 sm:px-5 lg:px-8">{children}</main>
+            <Suspense fallback={null}>
+              <Navbar />
+            </Suspense>
+            <main className="mx-auto w-full max-w-[1500px] flex-1 px-3 py-6 sm:px-5 lg:px-8">
+              {children}
+            </main>
             <Footer />
           </div>
         </Providers>
