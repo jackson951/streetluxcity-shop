@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/contexts/auth-context";
 import { getFirstValidationError, registerSchema } from "@/lib/validation";
-import { ArrowLeft, ArrowRight, Eye, EyeOff, ShoppingBasket, Mail, RefreshCw, CheckCircle2, ShieldCheck } from "lucide-react";
+import { ArrowLeft, ArrowRight, Eye, EyeOff, ShoppingBasket, Mail, RefreshCw, CheckCircle2, ShieldCheck, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState, useEffect, useRef } from "react";
@@ -35,7 +35,6 @@ const inputClass =
   "w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-rose-400 focus:bg-white focus:ring-2 focus:ring-rose-100 disabled:opacity-50 disabled:cursor-not-allowed";
 
 // OTP Input Component with auto-advance and auto-submit
-// OTP Input Component with auto-advance and auto-submit
 function OtpInput({
   value,
   onChange,
@@ -49,7 +48,6 @@ function OtpInput({
   disabled?: boolean;
   error?: string;
 }) {
-  // ✅ Fixed: Type the ref array to accept null values
   const inputsRef = useRef<(HTMLInputElement | null)[]>([]);
 
   const handleChange = (index: number, val: string) => {
@@ -59,23 +57,19 @@ function OtpInput({
     const joined = newValue.join("");
     onChange(joined);
 
-    // Auto-advance to next input
     if (digit && index < 5) {
       inputsRef.current[index + 1]?.focus();
     }
 
-    // Auto-submit when 6 digits entered
     if (joined.length === 6 && joined.split("").every((d) => d !== "")) {
       onComplete(joined);
     }
   };
 
   const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    // Handle backspace navigation
     if (e.key === "Backspace" && !value[index] && index > 0) {
       inputsRef.current[index - 1]?.focus();
     }
-    // Handle paste
     if (e.key === "v" && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       navigator.clipboard.readText().then((pasted) => {
@@ -96,7 +90,6 @@ function OtpInput({
         {[...Array(6)].map((_, index) => (
           <input
             key={index}
-            // ✅ Fixed: Explicitly handle null in ref callback
             ref={(el) => { inputsRef.current[index] = el; }}
             type="text"
             inputMode="numeric"
@@ -121,6 +114,7 @@ function OtpInput({
     </div>
   );
 }
+
 export default function RegisterPage() {
   const { register } = useAuth();
   const router = useRouter();
@@ -147,6 +141,9 @@ export default function RegisterPage() {
   const [countdown, setCountdown] = useState(0);
   const [simulatedOtp, setSimulatedOtp] = useState<string>("");
   const [registrationData, setRegistrationData] = useState<any>(null);
+  
+  // Registration error state
+  const [registrationError, setRegistrationError] = useState<string | null>(null);
 
   // Form field handlers
   function update(field: keyof typeof form) {
@@ -162,7 +159,6 @@ export default function RegisterPage() {
     };
   }
 
-  // Format countdown timer
   function formatTime(seconds: number) {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -173,6 +169,7 @@ export default function RegisterPage() {
   async function handleFormSubmit(e: FormEvent) {
     e.preventDefault();
     setFormErrors({});
+    setRegistrationError(null);
 
     const parsed = registerSchema.safeParse({
       fullName: form.fullName,
@@ -184,7 +181,6 @@ export default function RegisterPage() {
 
     if (!parsed.success) {
       const error = getFirstValidationError(parsed.error);
-      // Map error to field if possible
       setFormErrors({ email: error });
       return;
     }
@@ -192,21 +188,15 @@ export default function RegisterPage() {
     setSubmitLoading(true);
     
     try {
-      // Simulate API call to send OTP
       await new Promise((resolve) => setTimeout(resolve, 1200));
       
-      // Generate 6-digit OTP for simulation
       const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
-      console.log("the generated otp",generatedOtp)
+      console.log("🔐 [DEV] OTP:", generatedOtp);
       setSimulatedOtp(generatedOtp);
       setRegistrationData(parsed.data);
       
-      // Transition to OTP view
       setView("otp");
-      setCountdown(120); // 2 minute resend cooldown
-      
-      // In production: replace above with actual API call
-      // await api.post('/auth/send-otp', { email: parsed.data.email });
+      setCountdown(120);
       
     } catch (err) {
       setFormErrors({ email: "Failed to send verification code. Please try again." });
@@ -215,54 +205,63 @@ export default function RegisterPage() {
     }
   }
 
-  // Handle OTP auto-validation
+  // ✅ FIXED: Handle OTP validation AND registration in correct order
   async function handleOtpComplete(enteredOtp: string) {
     if (enteredOtp.length !== 6) return;
     
     setOtpLoading(true);
     setOtpError(null);
+    setRegistrationError(null);
 
     try {
-      // Simulate OTP verification delay
+      // Step 1: Verify OTP
       await new Promise((resolve) => setTimeout(resolve, 800));
       
       if (enteredOtp !== simulatedOtp) {
         setOtpError("Invalid code. Please check and try again.");
-        setOtpLoading(false);
         return;
       }
 
-      // OTP validated - proceed with registration
-      setView("success");
-      
-      // Complete registration in background
+      // ✅ Step 2: ONLY proceed to registration AFTER OTP is verified
+      if (!registrationData) {
+        throw new Error("Registration data not found. Please start over.");
+      }
+
+      // Attempt backend registration
       await register(registrationData);
       
-      // Redirect after brief success animation
+      // ✅ Step 3: ONLY show success AFTER registration succeeds
+      setView("success");
+      
+      // Redirect after brief animation
       setTimeout(() => {
         router.push("/");
         router.refresh();
       }, 1500);
       
     } catch (err) {
-      setOtpError("Verification failed. Please try again.");
+      // ❌ Registration failed - show error and let user retry
+      const message = err instanceof Error ? err.message : "Registration failed. Please try again.";
+      setRegistrationError(message);
+      setOtpError("Verification succeeded, but account creation failed. Please retry.");
+      
+      // Keep user on OTP view so they can retry or go back
     } finally {
       setOtpLoading(false);
     }
   }
 
-  // Handle OTP resend
   async function handleResendOtp() {
     if (countdown > 0 || otpLoading) return;
     
     setOtpLoading(true);
     setOtp("");
     setOtpError(null);
+    setRegistrationError(null);
     
     try {
       await new Promise((resolve) => setTimeout(resolve, 1000));
       
-      // Generate new OTP
       const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
       setSimulatedOtp(newOtp);
       setCountdown(120);
@@ -274,28 +273,52 @@ export default function RegisterPage() {
     }
   }
 
-  // Countdown timer effect
+  // Countdown timer
   useEffect(() => {
     if (countdown <= 0) return;
-    
     const timer = setInterval(() => {
       setCountdown((prev) => Math.max(0, prev - 1));
     }, 1000);
-    
     return () => clearInterval(timer);
   }, [countdown]);
 
-  // Clear OTP error when user types
+  // Clear errors when OTP changes
   useEffect(() => {
     if (otpError) setOtpError(null);
+    if (registrationError) setRegistrationError(null);
   }, [otp]);
 
-  // Back to form handler
   function handleBack() {
     setView("form");
     setOtp("");
     setOtpError(null);
+    setRegistrationError(null);
     setSimulatedOtp("");
+    setRegistrationData(null);
+  }
+
+  // Retry registration after error (keeps OTP verified)
+  async function handleRetryRegistration() {
+    if (!registrationData) return;
+    
+    setOtpLoading(true);
+    setRegistrationError(null);
+    setOtpError(null);
+    
+    try {
+      await register(registrationData);
+      setView("success");
+      setTimeout(() => {
+        router.push("/");
+        router.refresh();
+      }, 1500);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Registration failed. Please try again.";
+      setRegistrationError(message);
+      setOtpError("Still having trouble? Try going back and checking your details.");
+    } finally {
+      setOtpLoading(false);
+    }
   }
 
   return (
@@ -323,8 +346,9 @@ export default function RegisterPage() {
             <div className="flex items-center justify-center gap-2 mb-2">
               <button
                 onClick={handleBack}
-                className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors -ml-1"
+                className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors -ml-1 disabled:opacity-50"
                 aria-label="Go back"
+                disabled={otpLoading}
               >
                 <ArrowLeft className="h-4 w-4 text-slate-500" />
               </button>
@@ -350,7 +374,7 @@ export default function RegisterPage() {
       </div>
 
       {/* Main Card */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-7 shadow-sm sm:shadow-md">
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-7 shadow-sm sm:shadow-md relative">
         
         {/* Registration Form View */}
         {view === "form" && (
@@ -457,45 +481,93 @@ export default function RegisterPage() {
               <span className="text-xs font-medium text-rose-700">Secure verification</span>
             </div>
 
+            {/* Registration Error Alert */}
+            {registrationError && (
+              <div className="flex items-start gap-3 p-4 rounded-xl bg-red-50 border border-red-200">
+                <AlertCircle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+                <div className="text-sm">
+                  <p className="font-medium text-red-800">Account creation failed</p>
+                  <p className="text-red-700 mt-0.5">{registrationError}</p>
+                </div>
+              </div>
+            )}
+
             {/* OTP Input */}
             <OtpInput
               value={otp}
               onChange={setOtp}
               onComplete={handleOtpComplete}
-              disabled={otpLoading}
+              disabled={otpLoading || !!registrationError}
               error={otpError || undefined}
             />
 
-            {/* Resend Section */}
+            {/* Action Buttons */}
             <div className="flex flex-col items-center gap-3 pt-2">
-              <button
-                type="button"
-                onClick={handleResendOtp}
-                disabled={countdown > 0 || otpLoading}
-                className="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-rose-600 transition-colors disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:text-slate-600"
-              >
-                <RefreshCw className={`h-4 w-4 ${countdown > 0 ? "animate-spin" : ""}`} />
-                {countdown > 0 
-                  ? `Resend code in ${formatTime(countdown)}` 
-                  : "Didn't receive a code? Resend"}
-              </button>
-              
-              <button
-                type="button"
-                onClick={handleBack}
-                disabled={otpLoading}
-                className="text-sm text-slate-400 hover:text-slate-600 transition-colors disabled:opacity-50"
-              >
-                ← Use a different email
-              </button>
+              {registrationError ? (
+                // Show retry options if registration failed
+                <>
+                  <button
+                    type="button"
+                    onClick={handleRetryRegistration}
+                    disabled={otpLoading}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-500 text-white text-sm font-medium hover:bg-rose-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {otpLoading ? (
+                      <>
+                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                        <span>Retrying...</span>
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="h-4 w-4" />
+                        <span>Retry Account Creation</span>
+                      </>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleBack}
+                    disabled={otpLoading}
+                    className="text-sm text-slate-500 hover:text-slate-700 transition-colors disabled:opacity-50"
+                  >
+                    ← Edit your details and try again
+                  </button>
+                </>
+              ) : (
+                // Normal flow: resend or go back
+                <>
+                  <button
+                    type="button"
+                    onClick={handleResendOtp}
+                    disabled={countdown > 0 || otpLoading}
+                    className="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-rose-600 transition-colors disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:text-slate-600"
+                  >
+                    <RefreshCw className={`h-4 w-4 ${countdown > 0 ? "animate-spin" : ""}`} />
+                    {countdown > 0 
+                      ? `Resend code in ${formatTime(countdown)}` 
+                      : "Didn't receive a code? Resend"}
+                  </button>
+                  
+                  <button
+                    type="button"
+                    onClick={handleBack}
+                    disabled={otpLoading}
+                    className="text-sm text-slate-400 hover:text-slate-600 transition-colors disabled:opacity-50"
+                  >
+                    ← Use a different email
+                  </button>
+                </>
+              )}
             </div>
 
-            {/* Loading Overlay for OTP */}
-            {otpLoading && (
+            {/* Loading Overlay */}
+            {otpLoading && !registrationError && (
               <div className="absolute inset-0 bg-white/80 backdrop-blur-sm rounded-2xl flex items-center justify-center z-10">
                 <div className="flex flex-col items-center gap-3">
                   <div className="h-8 w-8 animate-spin rounded-full border-3 border-rose-500 border-t-transparent" />
-                  <span className="text-sm font-medium text-slate-700">Verifying code...</span>
+                  <span className="text-sm font-medium text-slate-700">
+                    {registrationData ? "Creating your account..." : "Verifying code..."}
+                  </span>
                 </div>
               </div>
             )}
@@ -509,7 +581,6 @@ export default function RegisterPage() {
               <p className="text-slate-600">Welcome, <span className="font-semibold text-slate-900">{form.fullName.split(" ")[0]}!</span></p>
               <p className="text-sm text-slate-400">Setting up your experience...</p>
             </div>
-            {/* Progress bar */}
             <div className="mt-6 h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
               <div className="h-full bg-gradient-to-r from-rose-500 to-rose-600 rounded-full animate-pulse" style={{ width: "100%" }} />
             </div>
@@ -547,8 +618,8 @@ export default function RegisterPage() {
         </>
       )}
 
-      {/* Demo Notice - Remove in production */}
-      {process.env.NODE_ENV === "development" && view === "otp" && simulatedOtp && (
+      {/* Dev Mode OTP Display */}
+      {process.env.NODE_ENV === "development" && view === "otp" && simulatedOtp && !registrationError && (
         <div className="mt-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-center">
           <p className="text-xs text-amber-800">
             <span className="font-semibold">Dev Mode:</span> Your OTP is{" "}
