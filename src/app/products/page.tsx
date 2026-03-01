@@ -23,6 +23,16 @@ import { useCart } from "@/contexts/cart-context";
 import { useAuth } from "@/contexts/auth-context";
 import { Star } from "lucide-react";
 
+// ── EXCHANGE RATE CONFIG ──
+const DEFAULT_USD_TO_ZAR = 18.5;
+const parsedUsdToZar = Number(process.env.NEXT_PUBLIC_USD_TO_ZAR);
+const USD_TO_ZAR = Number.isFinite(parsedUsdToZar) && parsedUsdToZar > 0 ? parsedUsdToZar : DEFAULT_USD_TO_ZAR;
+
+// Helper to convert USD price (from DB) to ZAR for display/filtering
+function toZAR(usdPrice: number): number {
+  return usdPrice * USD_TO_ZAR;
+}
+
 type SortOption = "relevance" | "price-asc" | "price-desc" | "name-asc";
 type StockFilter = "all" | "in-stock" | "out-of-stock";
 
@@ -202,7 +212,7 @@ function FilterPill({ label, active, onClick }: { label: string; active: boolean
   );
 }
 
-// ── Price input ──
+// ── Price input (accepts ZAR values from user) ──
 function PriceInput({ value, onChange, placeholder }: {
   value: string; onChange: (v: string) => void; placeholder: string;
 }) {
@@ -281,6 +291,7 @@ function ProductsContent() {
     return counts;
   }, [products]);
 
+  // ── FIXED: Filter using ZAR-converted prices ──
   const filtered = useMemo(() => {
     const q = deferredQuery.trim().toLowerCase();
     const catNorm = selectedCategory.trim().toLowerCase();
@@ -289,22 +300,28 @@ function ProductsContent() {
     const effectiveCat =
       catNorm === "all" || knownIds.has(catNorm) || knownNames.has(catNorm) ? catNorm : "all";
 
-    let min = parsePositiveNumber(minPrice.trim());
-    let max = parsePositiveNumber(maxPrice.trim());
-    if (min != null && max != null && min > max) [min, max] = [max, min];
+    // Parse user-entered ZAR prices
+    let minZAR = parsePositiveNumber(minPrice.trim());
+    let maxZAR = parsePositiveNumber(maxPrice.trim());
+    if (minZAR != null && maxZAR != null && minZAR > maxZAR) [minZAR, maxZAR] = [maxZAR, minZAR];
 
     let result = products.filter((p) => {
+      // Convert DB price (USD) to ZAR for comparison
+      const priceZAR = toZAR(p.price);
+      
       const matchQ = !q || p.name.toLowerCase().includes(q) || (p.description || "").toLowerCase().includes(q) || p.category.name.toLowerCase().includes(q);
       const matchCat = effectiveCat === "all" || String(p.category.id) === effectiveCat || p.category.name.toLowerCase() === effectiveCat;
-      const matchMin = min == null || p.price >= min;
-      const matchMax = max == null || p.price <= max;
+      // Compare against ZAR-converted price
+      const matchMin = minZAR == null || priceZAR >= minZAR;
+      const matchMax = maxZAR == null || priceZAR <= maxZAR;
       const inStock = isInStock(p);
       const matchStock = stockFilter === "all" || (stockFilter === "in-stock" && inStock) || (stockFilter === "out-of-stock" && !inStock);
       return matchQ && matchCat && matchMin && matchMax && matchStock;
     });
 
-    if (sortBy === "price-asc") result = [...result].sort((a, b) => a.price - b.price);
-    else if (sortBy === "price-desc") result = [...result].sort((a, b) => b.price - a.price);
+    // Sorting: use ZAR-converted prices for price-based sorts
+    if (sortBy === "price-asc") result = [...result].sort((a, b) => toZAR(a.price) - toZAR(b.price));
+    else if (sortBy === "price-desc") result = [...result].sort((a, b) => toZAR(b.price) - toZAR(a.price));
     else if (sortBy === "name-asc") result = [...result].sort((a, b) => a.name.localeCompare(b.name));
 
     return result;
@@ -313,10 +330,11 @@ function ProductsContent() {
   const totalInStock = useMemo(() => products.filter(isInStock).length, [products]);
   const totalOutOfStock = products.length - totalInStock;
 
-  const priceRange = useMemo(() => {
+  // ── FIXED: Price range calculated in ZAR ──
+  const priceRangeZAR = useMemo(() => {
     if (!products.length) return { min: 0, max: 0 };
-    const prices = products.map((p) => p.price);
-    return { min: Math.min(...prices), max: Math.max(...prices) };
+    const pricesZAR = products.map((p) => toZAR(p.price));
+    return { min: Math.min(...pricesZAR), max: Math.max(...pricesZAR) };
   }, [products]);
 
   function resetFilters() {
@@ -335,15 +353,18 @@ function ProductsContent() {
   return (
     /*
       KEY FIX: The outer page scrolls naturally — no fixed-height overflow containers.
-      The sidebar is sticky so it follows the scroll. Products render in a normal flow grid.
+      The sidebar is sticky AND independently scrollable. Products render in a normal flow grid.
       This eliminates all virtualized-scroll flicker and the "never reaches bottom" issue.
     */
     <div className="flex gap-6 items-start">
 
       {/* ═══════════════════════════════
           PERMANENT SIDEBAR (lg+)
+          - Sticky positioning
+          - Independent vertical scrolling
+          - Max height based on viewport
       ═══════════════════════════════ */}
-      <aside className="hidden lg:flex w-64 xl:w-72 shrink-0 flex-col gap-4 sticky top-6">
+      <aside className="hidden lg:flex w-64 xl:w-72 shrink-0 flex-col gap-4 sticky top-6 max-h-[calc(100vh-3rem)] overflow-y-auto pr-2 pb-6">
 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -403,9 +424,9 @@ function ProductsContent() {
         {/* Price */}
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm space-y-3">
           <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-slate-400">
-            <TrendingUp className="h-3 w-3" /> Price Range
+            <TrendingUp className="h-3 w-3" /> Price Range (ZAR)
           </p>
-          {!loading && <p className="text-xs text-slate-400">R{priceRange.min.toLocaleString()} – R{priceRange.max.toLocaleString()}</p>}
+          {!loading && <p className="text-xs text-slate-400">R{priceRangeZAR.min.toLocaleString("en-ZA")} – R{priceRangeZAR.max.toLocaleString("en-ZA")}</p>}
           <div className="grid grid-cols-2 gap-2">
             <PriceInput value={minPrice} onChange={setMinPrice} placeholder="Min" />
             <PriceInput value={maxPrice} onChange={setMaxPrice} placeholder="Max" />
