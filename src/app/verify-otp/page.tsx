@@ -124,7 +124,6 @@ export default function VerifyOtpPage() {
   const [otpLoading, setOtpLoading] = useState(false);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
-  const [simulatedOtp, setSimulatedOtp] = useState<string>("");
   
   // Flow state
   const [flow, setFlow] = useState<"registration" | "forgot-password" | null>(null);
@@ -150,10 +149,6 @@ export default function VerifyOtpPage() {
       setEmail(emailParam);
     }
     
-    // Generate OTP for demo
-    const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
-    console.log("🔐 [DEV] OTP:", generatedOtp);
-    setSimulatedOtp(generatedOtp);
     setCountdown(120);
   }, [searchParams]);
 
@@ -220,8 +215,8 @@ export default function VerifyOtpPage() {
     setSubmitLoading(true);
     
     try {
-      // Simulate password reset
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Call real password reset endpoint
+      await api.resetPassword({ email, code: otp, newPassword });
       
       setView("success");
       
@@ -248,14 +243,13 @@ export default function VerifyOtpPage() {
     setError(null);
     
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      
-      const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
-      setSimulatedOtp(newOtp);
+      // Call real OTP resend endpoint
+      await api.forgotPassword(email);
       setCountdown(120);
       
     } catch (err) {
-      setOtpError("Failed to resend code. Please try again.");
+      const message = err instanceof Error ? err.message : "Failed to resend code. Please try again.";
+      setOtpError(message);
     } finally {
       setOtpLoading(false);
     }
@@ -547,15 +541,6 @@ export default function VerifyOtpPage() {
         )}
       </div>
 
-      {/* Dev Mode OTP Display */}
-      {process.env.NODE_ENV === "development" && simulatedOtp && (
-        <div className="mt-4 p-3 rounded-lg bg-amber-50 border border-amber-200 text-center">
-          <p className="text-xs text-amber-800">
-            <span className="font-semibold">Dev Mode:</span> Your OTP is{" "}
-            <span className="font-mono font-bold bg-amber-200 px-1.5 py-0.5 rounded">{simulatedOtp}</span>
-          </p>
-        </div>
-      )}
     </div>
   );
 }
