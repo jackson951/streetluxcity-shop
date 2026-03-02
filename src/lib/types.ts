@@ -201,3 +201,29 @@ export type AdminUserUpdatePayload = {
   phone?: string;
   address?: string;
 };
+
+// OTP Types
+export type OtpType = "REGISTRATION" | "FORGOT_PASSWORD";
+
+export type OtpResponse = {
+  email: string;
+  code: string;
+  expiresAt: string;
+  type: OtpType;
+};
+
+export type ForgotPasswordRequest = {
+  email: string;
+};
+
+export type VerifyOtpRequest = {
+  email: string;
+  code: string;
+  type: OtpType;
+};
+
+export type ResetPasswordRequest = {
+  email: string;
+  code: string;
+  newPassword: string;
+};

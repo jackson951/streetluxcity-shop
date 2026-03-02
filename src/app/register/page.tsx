@@ -6,6 +6,7 @@ import { ArrowLeft, ArrowRight, Eye, EyeOff, ShoppingBasket, Mail, RefreshCw, Ch
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState, useEffect, useRef } from "react";
+import { api } from "@/lib/api";
 
 // Reusable Field component
 function Field({
@@ -188,18 +189,17 @@ export default function RegisterPage() {
     setSubmitLoading(true);
     
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1200));
+      // Call real OTP endpoint for registration
+      await api.forgotPassword(form.email);
       
-      const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
-      console.log("🔐 [DEV] OTP:", generatedOtp);
-      setSimulatedOtp(generatedOtp);
       setRegistrationData(parsed.data);
       
-      setView("otp");
-      setCountdown(120);
+      // Redirect to OTP verification page
+      router.push(`/verify-otp?flow=registration&email=${encodeURIComponent(form.email)}`);
       
     } catch (err) {
-      setFormErrors({ email: "Failed to send verification code. Please try again." });
+      const message = err instanceof Error ? err.message : "Failed to send verification code. Please try again.";
+      setFormErrors({ email: message });
     } finally {
       setSubmitLoading(false);
     }
@@ -245,10 +245,15 @@ export default function RegisterPage() {
       setRegistrationError(message);
       setOtpError("Verification succeeded, but account creation failed. Please retry.");
       
-      // Keep user on OTP view so they can retry or go back
+      // Keep user on OTP view so they can retry
     } finally {
       setOtpLoading(false);
     }
+  }
+
+  // Redirect to OTP verification page
+  function handleContinueToOtp() {
+    router.push(`/verify-otp?flow=registration&email=${encodeURIComponent(form.email)}`);
   }
 
   async function handleResendOtp() {

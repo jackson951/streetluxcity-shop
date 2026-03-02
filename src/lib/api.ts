@@ -325,5 +325,13 @@ export const api = {
   listOrderPayments: (token: string, orderId: string) =>
     request<PaymentTransaction[]>(`/orders/${orderId}/payments`, "GET", token),
   listCustomerPayments: (token: string, customerId: string) =>
-    request<PaymentTransaction[]>(`/customers/${customerId}/payments`, "GET", token)
+    request<PaymentTransaction[]>(`/customers/${customerId}/payments`, "GET", token),
+
+  // OTP Endpoints
+  forgotPassword: (email: string) =>
+    request<void>("/auth/forgot-password", "POST", undefined, { email }),
+  resetPassword: (payload: { email: string; code: string; newPassword: string }) =>
+    request<AuthResponse>("/auth/reset-password", "POST", undefined, payload),
+  verifyOtp: (payload: { email: string; code: string; type: string }) =>
+    request<{ valid: boolean }>("/auth/verify-otp", "POST", undefined, payload)
 };
