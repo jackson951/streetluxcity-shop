@@ -8,10 +8,10 @@ export function WhatsAppChat() {
   const [isOpen, setIsOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
 
-  // Hide chat on mobile screens to avoid conflicts with mobile navigation
+  // Show chat on all devices, but adjust positioning for mobile
   useEffect(() => {
     const checkVisibility = () => {
-      setIsVisible(window.innerWidth >= 768);
+      setIsVisible(true); // Always visible on all devices
     };
     
     checkVisibility();
@@ -31,7 +31,7 @@ export function WhatsAppChat() {
   return (
     <>
       {/* Floating WhatsApp Button */}
-      <div className="fixed bottom-6 right-6 z-50">
+      <div className="fixed bottom-6 right-6 z-50 md:bottom-6 md:right-6 lg:bottom-6 lg:right-6">
         <button
           onClick={() => setIsOpen(true)}
           className="group relative flex h-16 w-16 items-center justify-center rounded-full bg-green-500 shadow-lg shadow-green-500/30 hover:shadow-xl hover:shadow-green-500/50 transition-all duration-300 hover:scale-110 active:scale-95"
