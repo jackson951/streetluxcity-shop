@@ -351,7 +351,7 @@ export default function CartPage() {
                     <div>
                       <div className="font-medium text-slate-900">Delivery</div>
                       <div className="text-xs text-slate-500">
-                        {shipping === 0 ? 'Free delivery' : `R${DELIVERY_FEE} delivery fee`}
+                        {shipping === 0 ? 'Free delivery' : `R${DELIVERY_FEE_ZAR} delivery fee`}
                         {subtotal > 0 && subtotal < FREE_SHIPPING_THRESHOLD && (
                           <span className="ml-1">• Free over R{FREE_SHIPPING_THRESHOLD}</span>
                         )}
@@ -362,7 +362,7 @@ export default function CartPage() {
 
                 {/* Shipping Address (only for delivery) */}
                 {deliveryOption === 'delivery' && (
-                  <div className="mt-3">
+                  <div className="mt-3 relative z-10">
                     <GoogleMapsAutocomplete
                       onAddressSelect={(address, location) => {
                         setShippingAddress(address);
