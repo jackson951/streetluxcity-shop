@@ -2,6 +2,7 @@
 
 import { useAuth } from "@/contexts/auth-context";
 import { useCart } from "@/contexts/cart-context";
+import { api } from "@/lib/api";
 import { formatCurrency } from "@/lib/utils";
 import {
   Lock,
@@ -14,9 +15,10 @@ import {
   Trash2,
   Truck,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const STANDARD_SHIPPING = 79;
 const FREE_SHIPPING_THRESHOLD = 1200;
@@ -29,6 +31,33 @@ export default function CartPage() {
   const [error, setError] = useState<string | null>(null);
   const [updatingItemId, setUpdatingItemId] = useState<string | null>(null);
   const [checkingOut, setCheckingOut] = useState(false);
+  const [productImages, setProductImages] = useState<Record<string, string>>({});
+
+  // Fetch product images for cart items
+  useEffect(() => {
+    if (cart?.items && cart.items.length > 0) {
+      const fetchImages = async () => {
+        const imagePromises = cart.items.map(async (item) => {
+          try {
+            const product = await api.getProduct(item.productId);
+            return { productId: item.productId, imageUrl: product.imageUrls[0] || '/placeholder-image.jpg' };
+          } catch {
+            return { productId: item.productId, imageUrl: '/placeholder-image.jpg' };
+          }
+        });
+        
+        const results = await Promise.all(imagePromises);
+        const imageMap = results.reduce((acc, { productId, imageUrl }) => {
+          acc[productId] = imageUrl;
+          return acc;
+        }, {} as Record<string, string>);
+        
+        setProductImages(imageMap);
+      };
+      
+      fetchImages();
+    }
+  }, [cart?.items]);
 
   const canCheckout = Boolean(user && canUseCustomerFeatures && !isGuestCart);
   const subtotal = cart?.totalAmount || 0;
@@ -160,11 +189,32 @@ export default function CartPage() {
               <ul className="divide-y divide-slate-100">
                 {cart.items.map((item) => {
                   const isUpdating = updatingItemId === item.id;
+                  const productImage = productImages[item.productId];
                   return (
                     <li
                       key={item.id}
                       className={`flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center transition-opacity ${isUpdating ? "opacity-50" : ""}`}
                     >
+                      {/* Product Image */}
+                      <div className="flex-shrink-0">
+                        <div className="h-16 w-16 rounded-xl overflow-hidden border border-slate-200 bg-slate-100">
+                          {productImage ? (
+                            <Image
+                              src={productImage}
+                              alt={item.productName}
+                              width={64}
+                              height={64}
+                              className="h-full w-full object-cover"
+                              priority
+                            />
+                          ) : (
+                            <div className="h-full w-full flex items-center justify-center text-slate-400">
+                              <Package className="h-8 w-8" />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
                       {/* Product info */}
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-slate-900 truncate">{item.productName}</p>
