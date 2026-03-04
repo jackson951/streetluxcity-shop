@@ -7,6 +7,7 @@ import { Navbar } from "@/components/navbar";
 import { WhatsAppChat } from "@/components/whatsapp-chat";
 import { Manrope, Space_Grotesk } from "next/font/google";
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/next"
 
 const displayFont = Space_Grotesk({
   variable: "--font-display",
@@ -38,6 +39,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </main>
             <Footer />
             <WhatsAppChat />
+            <Analytics />
           </div>
         </Providers>
       </body>

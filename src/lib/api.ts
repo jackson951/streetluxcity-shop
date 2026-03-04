@@ -145,12 +145,15 @@ export const api = {
     invalidateGetCache([`/customers/${customerId}/cart`, `/customers/${customerId}/orders`, "/admin/orders"]);
     return session;
   },
-  createCheckoutSession: async (token: string) => {
+  createCheckoutSession: async (token: string, payload?: {
+    isDelivery?: boolean;
+    shippingAddress?: string;
+  }) => {
     const data = await request<CheckoutSession & { sessionId?: string; checkoutSessionId?: string }>(
       "/checkout/sessions",
       "POST",
       token,
-      {}
+      payload || {}
     );
     const resolvedId = data.id || data.sessionId || data.checkoutSessionId;
     if (!resolvedId) {

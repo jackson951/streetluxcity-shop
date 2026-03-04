@@ -16,7 +16,10 @@ type CartContextValue = {
   updateItem: (itemId: string, quantity: number) => Promise<void>;
   removeItem: (itemId: string) => Promise<void>;
   clearCart: () => Promise<void>;
-  checkout: () => Promise<{ sessionId: string }>;
+  checkout: (deliveryOptions?: {
+    isDelivery?: boolean;
+    shippingAddress?: string;
+  }) => Promise<{ sessionId: string }>;
 };
 
 const CartContext = createContext<CartContextValue | undefined>(undefined);
@@ -263,12 +266,15 @@ const refreshCart = useCallback(async () => {
     }
   };
 
-  const checkout = async () => {
+  const checkout = async (deliveryOptions?: {
+    isDelivery?: boolean;
+    shippingAddress?: string;
+  }) => {
     if (isGuestCart) throw new Error("Login to checkout. Your guest cart will be merged automatically.");
     if (!token || !effectiveCustomerId) throw new Error("Login to checkout.");
     setMutating(true);
     try {
-      const session = await api.createCheckoutSession(token);
+      const session = await api.createCheckoutSession(token, deliveryOptions);
       console.log("Created checkout session:", session);
       if (!session?.id || session.id === "undefined") {
         throw new Error("Failed to start checkout session. Please try again.");

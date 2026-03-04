@@ -21,6 +21,8 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 const STANDARD_SHIPPING = 79;
+const DELIVERY_FEE = 350/18.5; // Convert delivery fee from ZAR to USD for consistent currency handling
+const DELIVERY_FEE_ZAR = 350; // For display purposes in ZAR
 const FREE_SHIPPING_THRESHOLD = 1200;
 
 export default function CartPage() {
@@ -61,7 +63,15 @@ export default function CartPage() {
 
   const canCheckout = Boolean(user && canUseCustomerFeatures && !isGuestCart);
   const subtotal = cart?.totalAmount || 0;
-  const shipping = subtotal > 0 && subtotal < FREE_SHIPPING_THRESHOLD ? STANDARD_SHIPPING : 0;
+  
+  // Delivery options state
+  const [deliveryOption, setDeliveryOption] = useState<'collection' | 'delivery'>('collection');
+  const [shippingAddress, setShippingAddress] = useState('');
+  
+  // Calculate shipping based on delivery option
+  const shipping = deliveryOption === 'delivery' 
+    ? (subtotal > 0 && subtotal < FREE_SHIPPING_THRESHOLD ? DELIVERY_FEE : 0)
+    : 0;
   const total = subtotal + shipping;
   const freeShippingRemaining = FREE_SHIPPING_THRESHOLD - subtotal;
   const freeShippingProgress = Math.min((subtotal / FREE_SHIPPING_THRESHOLD) * 100, 100);
@@ -70,6 +80,8 @@ export default function CartPage() {
     () => cart?.items.reduce((sum, item) => sum + item.quantity, 0) || 0,
     [cart?.items]
   );
+
+  console.log("subtotal:", subtotal, "shipping:", shipping, "total:", total);
 
   async function handleQty(id: string, qty: number) {
     setError(null);
@@ -100,7 +112,19 @@ export default function CartPage() {
     setMessage(null);
     setCheckingOut(true);
     try {
-      const { sessionId } = await checkout();
+      // Validate delivery address if delivery is selected
+      if (deliveryOption === 'delivery' && !shippingAddress.trim()) {
+        setError("Please enter a shipping address for delivery.");
+        setCheckingOut(false);
+        return;
+      }
+      
+      const deliveryOptions = {
+        isDelivery: deliveryOption === 'delivery',
+        shippingAddress: deliveryOption === 'delivery' ? shippingAddress.trim() : undefined
+      };
+      
+      const { sessionId } = await checkout(deliveryOptions);
       setMessage("Taking you to payment…");
       router.push(`/checkout/payment?sessionId=${sessionId}`);
     } catch (err) {
@@ -275,21 +299,99 @@ export default function CartPage() {
             <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <h2 className="mb-4 font-bold text-slate-900">Order summary</h2>
 
-              {/* Free shipping progress */}
-              <div className="mb-5 rounded-xl bg-slate-50 p-3">
-                <div className="flex items-center justify-between text-xs font-medium text-slate-600 mb-2">
-                  <span className="flex items-center gap-1">
-                    <Truck className="h-3.5 w-3.5 text-emerald-500" />
-                    {shipping === 0 ? "You've got free shipping! 🎉" : `Add ${formatCurrency(freeShippingRemaining)} for free shipping`}
-                  </span>
-                </div>
-                <div className="h-1.5 w-full rounded-full bg-slate-200 overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-emerald-500 transition-all duration-500"
-                    style={{ width: `${freeShippingProgress}%` }}
+              {/* Delivery options */}
+              <div className="mb-4 rounded-xl border border-slate-200 bg-white p-3">
+                <h3 className="text-sm font-semibold text-slate-900 mb-3">Delivery Option</h3>
+                
+                {/* Collection Option */}
+                <label className={`flex items-center gap-3 p-3 rounded-lg border-2 mb-2 cursor-pointer transition-all ${
+                  deliveryOption === 'collection' 
+                    ? 'border-rose-400 bg-rose-50' 
+                    : 'border-slate-200 hover:border-slate-300'
+                }`}>
+                  <input
+                    type="radio"
+                    name="delivery-option"
+                    value="collection"
+                    checked={deliveryOption === 'collection'}
+                    onChange={() => setDeliveryOption('collection')}
+                    className="accent-rose-500"
                   />
-                </div>
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-lg bg-slate-100 flex items-center justify-center">
+                      <Package className="h-5 w-5 text-slate-600" />
+                    </div>
+                    <div>
+                      <div className="font-medium text-slate-900">Collection</div>
+                      <div className="text-xs text-slate-500">Free - Pick up from our store</div>
+                    </div>
+                  </div>
+                </label>
+
+                {/* Delivery Option */}
+                <label className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                  deliveryOption === 'delivery' 
+                    ? 'border-rose-400 bg-rose-50' 
+                    : 'border-slate-200 hover:border-slate-300'
+                }`}>
+                  <input
+                    type="radio"
+                    name="delivery-option"
+                    value="delivery"
+                    checked={deliveryOption === 'delivery'}
+                    onChange={() => setDeliveryOption('delivery')}
+                    className="accent-rose-500"
+                  />
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-lg bg-slate-100 flex items-center justify-center">
+                      <Truck className="h-5 w-5 text-slate-600" />
+                    </div>
+                    <div>
+                      <div className="font-medium text-slate-900">Delivery</div>
+                      <div className="text-xs text-slate-500">
+                        {shipping === 0 ? 'Free delivery' : `R${DELIVERY_FEE} delivery fee`}
+                        {subtotal > 0 && subtotal < FREE_SHIPPING_THRESHOLD && (
+                          <span className="ml-1">• Free over R{FREE_SHIPPING_THRESHOLD}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </label>
+
+                {/* Shipping Address (only for delivery) */}
+                {deliveryOption === 'delivery' && (
+                  <div className="mt-3">
+                    <label className="block text-xs font-medium text-slate-700 mb-2">
+                      Shipping Address
+                    </label>
+                    <textarea
+                      value={shippingAddress}
+                      onChange={(e) => setShippingAddress(e.target.value)}
+                      placeholder="Enter your delivery address..."
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent resize-none"
+                      rows={3}
+                    />
+                  </div>
+                )}
               </div>
+
+              {/* Free shipping progress */}
+              {deliveryOption === 'delivery' && (
+                <div className="mb-5 rounded-xl bg-slate-50 p-3">
+                  <div className="flex items-center justify-between text-xs font-medium text-slate-600 mb-2">
+                    <span className="flex items-center gap-1">
+                      <Truck className="h-3.5 w-3.5 text-emerald-500" />
+                      {shipping === 0 ? "You've got free shipping! 🎉" : `Add ${formatCurrency(freeShippingRemaining)} for free shipping`}
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full rounded-full bg-slate-200 overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-emerald-500 transition-all duration-500"
+                      style={{ width: `${freeShippingProgress}%` }}
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* Price breakdown */}
               <div className="space-y-3 text-sm">
@@ -300,7 +402,7 @@ export default function CartPage() {
                 <div className="flex justify-between text-slate-600">
                   <span>Shipping</span>
                   <span className={`font-medium ${shipping === 0 ? "text-emerald-600" : "text-slate-900"}`}>
-                    {shipping === 0 ? "Free" : formatCurrency(shipping)}
+                    {shipping === 0 ? "Free" : `R${shipping*18.5}`}
                   </span>
                 </div>
                 <div className="border-t border-slate-100 pt-3 flex justify-between">
