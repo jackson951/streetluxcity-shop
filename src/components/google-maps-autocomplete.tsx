@@ -105,10 +105,44 @@ export function GoogleMapsAutocomplete({
             options={{
               types: ['address'],
               componentRestrictions: { country: 'za' },
+              fields: ['formatted_address', 'geometry.location'],
+              strictBounds: false,
             }}
             className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent"
             defaultValue={address}
             onChange={(e: any) => setAddress(e.target.value)}
+            onKeyPress={(e: any) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                // Trigger search when Enter is pressed
+                const input = e.target;
+                if (input.value.trim()) {
+                  // Use Google Maps Geocoding API to search
+                  if (typeof window !== 'undefined' && window.google && window.google.maps) {
+                    const geocoder = new window.google.maps.Geocoder();
+                    geocoder.geocode({ address: input.value, componentRestrictions: { country: 'ZA' } }, (results: any, status: any) => {
+                      if (status === 'OK' && results && results[0]) {
+                        const place = results[0];
+                        const newAddress = place.formatted_address;
+                        const newLocation = {
+                          lat: place.geometry.location.lat(),
+                          lng: place.geometry.location.lng()
+                        };
+                        
+                        setAddress(newAddress);
+                        setLocation(newLocation);
+                        onAddressSelect(newAddress, newLocation);
+                        
+                        // Pan map to selected location
+                        if (mapRef.current) {
+                          mapRef.current.setView([newLocation.lat, newLocation.lng], 15);
+                        }
+                      }
+                    });
+                  }
+                }
+              }
+            }}
           />
         ) : (
           <input
@@ -122,13 +156,14 @@ export function GoogleMapsAutocomplete({
       </div>
 
       {/* Map */}
-      <div className="rounded-lg overflow-hidden border border-slate-200">
+      <div className="rounded-lg overflow-hidden border border-slate-200 relative z-10">
         {typeof window !== 'undefined' ? (
           <MapContainer
             center={[location.lat, location.lng]}
             zoom={15}
             style={{ height: '300px', width: '100%' }}
             ref={mapRef}
+            className="relative z-10"
           >
             <TileLayer
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
