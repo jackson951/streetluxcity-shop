@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { TermsModal } from "@/components/terms-modal";
+import { AxiosError } from "axios";
 
 const inputClass =
   "w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-rose-400 focus:bg-white focus:ring-2 focus:ring-rose-100";
@@ -48,7 +49,11 @@ export default function LoginPage() {
       await login(parsed.data.email, parsed.data.password);
       router.push("/");
     } catch (err) {
-      setError((err as Error).message);
+      const axiosError = err as AxiosError;
+setError(axiosError.response?.data 
+  ? (axiosError.response.data as { message?: string }).message ?? axiosError.message
+  : axiosError.message);
+      
     } finally {
       setLoading(false);
     }
