@@ -14,10 +14,12 @@ import {
   Package,
   ShoppingBasket,
   Truck,
+  XCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { toast } from "react-hot-toast";
 
 function statusStyle(status: string) {
   switch (status) {
@@ -141,6 +143,33 @@ export default function OrderDetailPage() {
 
   const hasApprovedPayment = payments.some((p) => p.status === "APPROVED");
   const { color, icon: StatusIcon } = order ? statusStyle(order.status) : { color: "", icon: Clock3 };
+
+  // Determine if order can be cancelled
+  const canCancelOrder = order && (
+    order.status === "ORDER_RECEIVED" ||
+    order.status === "PROCESSING_PACKING"
+  );
+
+  const handleCancelOrder = async () => {
+    if (!order || !canCancelOrder) return;
+    if (!window.confirm("Are you sure you want to cancel this order? This action cannot be undone.")) return;
+
+    try {
+      await api.cancelOrder(token!, order.id);
+      toast.success("Order cancelled successfully");
+      // Refresh order data
+      const [orderData, trackingData, paymentData] = await Promise.all([
+        api.getOrder(token!, orderId),
+        api.getOrderTracking(token!, orderId),
+        api.listOrderPayments(token!, orderId),
+      ]);
+      setOrder(orderData);
+      setTracking(trackingData);
+      setPayments(paymentData);
+    } catch (err) {
+      toast.error((err as Error).message || "Failed to cancel order");
+    }
+  };
 
   return (
     <RequireAuth>
@@ -307,9 +336,20 @@ export default function OrderDetailPage() {
 
             {/* ── Payment history ── */}
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="mb-4 flex items-center gap-2">
-                <CreditCard className="h-5 w-5 text-rose-500" />
-                <h2 className="font-bold text-slate-900">Payment</h2>
+              <div className="mb-4 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CreditCard className="h-5 w-5 text-rose-500" />
+                  <h2 className="font-bold text-slate-900">Payment</h2>
+                </div>
+                {canCancelOrder && (
+                  <button
+                    onClick={handleCancelOrder}
+                    className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100 transition-colors"
+                  >
+                    <XCircle className="h-4 w-4" />
+                    Cancel Order
+                  </button>
+                )}
               </div>
               {payments.length === 0 ? (
                 <p className="text-sm text-slate-400">No payment records found for this order.</p>

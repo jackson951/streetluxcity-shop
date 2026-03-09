@@ -258,5 +258,10 @@ export const api = {
   resetPassword: (payload: { email: string; code: string; newPassword: string }) =>
     request<AuthResponse>("/auth/reset-password", "POST", undefined, payload),
   verifyOtp: (payload: { email: string; code: string; type: string }) =>
-    request<{ valid: boolean }>("/auth/verify-otp", "POST", undefined, payload)
+    request<{ valid: boolean }>("/auth/verify-otp", "POST", undefined, payload),
+  cancelOrder: async (token: string, orderId: string) => {
+    const order = await request<Order>(`/orders/${orderId}/cancel`, "POST", token);
+    invalidateGetCache(["/orders", `/orders/${orderId}`, `/orders/${orderId}/tracking`, "/admin/orders"]);
+    return order;
+  }
 };
