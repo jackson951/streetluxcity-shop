@@ -361,7 +361,7 @@ function HeroSection({ categories, products }: { categories: Category[]; product
               icon={Truck} 
               color="bg-emerald-500/20 text-emerald-400" 
               title="Free Delivery" 
-              description="On orders over R500" 
+              description="On orders over R1200" 
             />
             <TrustBadge 
               icon={ShieldCheck} 
