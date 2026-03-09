@@ -5,6 +5,7 @@ import { Footer } from "@/components/footer";
 import { Providers } from "@/components/providers";
 import { Navbar } from "@/components/navbar";
 import { WhatsAppChat } from "@/components/whatsapp-chat";
+import { CookieConsent } from "@/components/cookie-consent";
 import { Manrope, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next"
@@ -39,6 +40,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </main>
             <Footer />
             <WhatsAppChat />
+            <CookieConsent />
             <Analytics />
           </div>
         </Providers>
