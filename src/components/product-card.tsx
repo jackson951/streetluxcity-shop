@@ -47,6 +47,7 @@ export function ProductCard({ product }: { product: Product }) {
             width={640}
             height={480}
             className="h-56 w-full object-cover transition duration-300 group-hover:scale-105"
+            unoptimized={true}
           />
           <span className="absolute left-3 top-3 rounded-full bg-rose-600 px-2 py-1 text-xs font-semibold text-white">Save {promoPercent}%</span>
         </div>

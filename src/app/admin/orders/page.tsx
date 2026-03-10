@@ -272,7 +272,7 @@ export default function AdminOrdersPage() {
                     {/* Action row */}
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                       <Link
-                        href={`/orders/${order.id}`}
+                        href={`/orders?id=${order.id}`}
                         className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:border-slate-300 hover:bg-white transition-all"
                       >
                         View order <ArrowRight className="h-3.5 w-3.5" />

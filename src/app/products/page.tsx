@@ -91,6 +91,7 @@ function ProductCard({ product, wide = false }: { product: Product; wide?: boole
             alt={product.name}
             fill
             className="object-cover transition duration-300 group-hover:scale-105"
+            unoptimized={true}
           />
           <span className="absolute left-2 top-2 rounded-full bg-rose-600 px-2 py-0.5 text-xs font-bold text-white">
             -{promoPercent}%
@@ -134,6 +135,7 @@ function ProductCard({ product, wide = false }: { product: Product; wide?: boole
             alt={product.name}
             fill
             className="object-cover transition duration-300 group-hover:scale-105"
+            unoptimized={true}
           />
           <span className="absolute left-3 top-3 rounded-full bg-rose-600 px-2.5 py-0.5 text-xs font-bold text-white shadow">
             -{promoPercent}%

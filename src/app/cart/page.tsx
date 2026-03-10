@@ -232,6 +232,7 @@ export default function CartPage() {
                               height={64}
                               className="h-full w-full object-cover"
                               priority
+                              unoptimized={true}
                             />
                           ) : (
                             <div className="h-full w-full flex items-center justify-center text-slate-400">

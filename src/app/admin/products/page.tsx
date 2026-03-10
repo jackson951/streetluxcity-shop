@@ -373,6 +373,7 @@ export default function AdminProductsPage() {
                           width={640}
                           height={300}
                           className="h-36 w-full object-cover"
+                          unoptimized={true}
                         />
                         {/* Status pill */}
                         <span className={`absolute right-2 top-2 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${

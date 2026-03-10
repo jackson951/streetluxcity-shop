@@ -1,46 +1,59 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import { ClientErrorObserver } from "@/components/client-error-observer";
-import { Footer } from "@/components/footer";
 import { Providers } from "@/components/providers";
 import { Navbar } from "@/components/navbar";
-import { WhatsAppChat } from "@/components/whatsapp-chat";
-import { CookieConsent } from "@/components/cookie-consent";
-import { Manrope, Space_Grotesk } from "next/font/google";
+import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
+import { MobileCapabilities } from "@/components/mobile-capabilities";
+import { AndroidBackHandler } from "@/components/AndroidBackHandler";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
+import { NativeAwareFooter } from "@/components/NativeAwareFooter";
+import { NativeMain } from "@/components/NativeMain";
+import { NativeAwareWhatsApp } from "@/components/NativeAwareWhatsApp";
+import { NativeAwareCookieConsent } from "@/components/NativeAwareCookieConsent";
 import "./globals.css";
-import { Analytics } from "@vercel/analytics/next"
-
-const displayFont = Space_Grotesk({
-  variable: "--font-display",
-  subsets: ["latin"]
-});
-
-const bodyFont = Manrope({
-  variable: "--font-body",
-  subsets: ["latin"]
-});
+import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
-  title: "StreetLuxCity Marketplace",
-  description: "Your trusted clothing store"
+  title: "StreetLuxCity Mobile",
+  description: "Your trusted clothing store - Shop on mobile with offline support",
+  manifest: "/manifest.json",
+  icons: {
+    icon: "/icons/icon-192x192.png",
+    shortcut: "/icons/icon-192x192.png",
+    apple: "/icons/icon-192x192.png",
+  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#000000" },
+  ],
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${displayFont.variable} ${bodyFont.variable} min-h-screen antialiased`}>
+      <body className="min-h-screen antialiased">
         <Providers>
+          <AndroidBackHandler />
+          <ServiceWorkerRegistration />
+          <MobileCapabilities />
           <ClientErrorObserver />
           <div className="flex min-h-screen flex-col">
             <Suspense fallback={null}>
               <Navbar />
             </Suspense>
-            <main className="mx-auto w-full max-w-[1500px] flex-1 px-3 py-6 sm:px-5 lg:px-8">
-              {children}
-            </main>
-            <Footer />
-            <WhatsAppChat />
-            <CookieConsent />
+            <NativeMain>{children}</NativeMain>
+            <NativeAwareFooter />
+            <MobileBottomNav />
+            <NativeAwareWhatsApp />
+            <NativeAwareCookieConsent />
             <Analytics />
           </div>
         </Providers>

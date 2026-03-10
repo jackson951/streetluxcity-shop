@@ -13,6 +13,8 @@
   --fg: #111827;
   --surface: #ffffff;
   --surface-border: #d6dde8;
+  --font-body: "Manrope", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
 }
 
 body {
@@ -36,4 +38,16 @@ h3 {
 ::selection {
   background: rgba(11, 87, 208, 0.22);
   color: #081f4d;
+}
+
+/* Safe area padding for native bottom nav */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .pb-safe {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 0.5rem);
+  }
+}
+
+/* Add bottom padding to main content on native */
+[data-native="true"] main {
+  padding-bottom: 5rem;
 }
