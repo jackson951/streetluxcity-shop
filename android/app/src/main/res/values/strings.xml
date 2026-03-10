@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">StreetLuxCity Mobile</string>
-    <string name="title_activity_main">StreetLuxCity Mobile</string>
+    <string name="app_name">StreetLuxCity Shop</string>
+    <string name="title_activity_main">StreetLuxCity Shop</string>
     <string name="package_name">com.streetluxcity.mobile</string>
     <string name="custom_url_scheme">com.streetluxcity.mobile</string>
 </resources>

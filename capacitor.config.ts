@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.streetluxcity.mobile',
-  appName: 'StreetLuxCity Mobile',
+  appName: 'StreetLuxCity Shop',
   webDir: 'out',
   server: {
     androidScheme: 'https'

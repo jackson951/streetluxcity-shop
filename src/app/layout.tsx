@@ -15,7 +15,7 @@ import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
-  title: "StreetLuxCity Mobile",
+  title: "StreetLuxCity Shop",
   description: "Your trusted clothing store - Shop on mobile with offline support",
   manifest: "/manifest.json",
   icons: {
