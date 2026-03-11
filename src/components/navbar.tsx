@@ -23,7 +23,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 
 export function Navbar() {
-  const { user, isAdmin, hasAdminRole, viewMode, toggleViewMode, logout } = useAuth();
+  const { user, isAdmin, hasAdminRole, logout } = useAuth();
   const { cartQuantity } = useCart();
   const router = useRouter();
   const pathname = usePathname();
@@ -73,7 +73,6 @@ export function Navbar() {
   const resolvedUser         = hydrated ? user          : null;
   const resolvedIsAdmin      = hydrated ? isAdmin       : false;
   const resolvedHasAdminRole = hydrated ? hasAdminRole  : false;
-  const resolvedViewMode     = hydrated ? viewMode      : "CUSTOMER";
   const resolvedCart         = hydrated ? cartQuantity  : 0;
 
   const navLinks = useMemo(() => [
@@ -181,15 +180,6 @@ export function Navbar() {
         {/* Desktop right actions */}
         <div className="ml-auto hidden items-center gap-1.5 md:flex">
 
-          {/* Admin view toggle */}
-          {resolvedHasAdminRole && (
-            <button
-              onClick={toggleViewMode}
-              className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs font-bold uppercase tracking-wide text-rose-300 hover:bg-rose-500/20 transition-colors"
-            >
-              {resolvedViewMode === "ADMIN" ? "Customer View" : "Admin View"}
-            </button>
-          )}
 
           {/* Nav links */}
           {navLinks.map((link) => (
@@ -316,15 +306,6 @@ export function Navbar() {
               </button>
             </form>
 
-            {/* Admin toggle */}
-            {resolvedHasAdminRole && (
-              <button
-                onClick={toggleViewMode}
-                className="w-full rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-2.5 text-left text-sm font-semibold text-rose-300"
-              >
-                {resolvedViewMode === "ADMIN" ? "Switch to Customer View" : "Switch to Admin View"}
-              </button>
-            )}
 
             {/* Categories */}
             <div className="rounded-xl border border-white/10 bg-slate-800/50">

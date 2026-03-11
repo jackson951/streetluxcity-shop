@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { TermsModal } from "@/components/terms-modal";
+import { RequireNoAuth } from "@/components/require-no-auth";
 
 // Reusable Field component
 function Field({
@@ -131,7 +132,8 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-lg px-4 py-8 sm:py-10">
+    <RequireNoAuth>
+      <div className="mx-auto w-full max-w-lg px-4 py-8 sm:py-10">
       {/* Header */}
       <div className="mb-6 sm:mb-8 text-center">
         <Link href="/" className="inline-flex items-center gap-2 mb-6 group">
@@ -326,5 +328,6 @@ export default function RegisterPage() {
         buttonText="I Accept"
       />
     </div>
+    </RequireNoAuth>
   );
 }

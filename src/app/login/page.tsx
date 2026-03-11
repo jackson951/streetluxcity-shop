@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { TermsModal } from "@/components/terms-modal";
 import { AxiosError } from "axios";
+import { RequireNoAuth } from "@/components/require-no-auth";
 
 const inputClass =
   "w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-rose-400 focus:bg-white focus:ring-2 focus:ring-rose-100";
@@ -60,7 +61,8 @@ setError(axiosError.response?.data
   }
 
   return (
-    <div className="mx-auto w-full max-w-md px-4 py-10">
+    <RequireNoAuth>
+      <div className="mx-auto w-full max-w-md px-4 py-10">
 
       {/* Header */}
       <div className="mb-8 text-center">
@@ -193,5 +195,6 @@ setError(axiosError.response?.data
         buttonText="I Accept"
       />
     </div>
+    </RequireNoAuth>
   );
 }

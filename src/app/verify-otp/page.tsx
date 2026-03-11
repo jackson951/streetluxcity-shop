@@ -6,6 +6,7 @@ import { ArrowLeft, ArrowRight, Eye, EyeOff, Mail, RefreshCw, CheckCircle2, Shie
 import Link from "next/link";
 import { OtpType, OtpResponse } from "@/lib/types";
 import { api } from "@/lib/api";
+import { RequireNoAuth } from "@/components/require-no-auth";
 
 // Reusable Field component
 function Field({
@@ -284,167 +285,172 @@ export default function VerifyOtpPage() {
 
   if (flow === "forgot-password" && view === "reset") {
     return (
-      <div className="mx-auto w-full max-w-lg px-4 py-8 sm:py-10">
-        {/* Header */}
-        <div className="mb-6 sm:mb-8 text-center">
-          <Link href="/" className="inline-flex items-center gap-2 mb-6 group">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-rose-500 to-rose-600 shadow-lg shadow-rose-500/25 transition-transform group-hover:scale-105">
-              <Mail className="h-4 w-4 text-white" />
-            </span>
-            <span className="text-lg font-extrabold tracking-tight text-slate-900">
-              StreetLux<span className="text-rose-500">City</span>
-            </span>
-          </Link>
-          
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <button
-              onClick={handleBack}
-              className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors -ml-1 disabled:opacity-50"
-              aria-label="Go back"
-              disabled={submitLoading}
-            >
-              <ArrowLeft className="h-4 w-4 text-slate-500" />
-            </button>
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Create new password</h1>
+      <RequireNoAuth>
+        <div className="mx-auto w-full max-w-lg px-4 py-8 sm:py-10">
+          {/* Header */}
+          <div className="mb-6 sm:mb-8 text-center">
+            <Link href="/" className="inline-flex items-center gap-2 mb-6 group">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-rose-500 to-rose-600 shadow-lg shadow-rose-500/25 transition-transform group-hover:scale-105">
+                <Mail className="h-4 w-4 text-white" />
+              </span>
+              <span className="text-lg font-extrabold tracking-tight text-slate-900">
+                StreetLux<span className="text-rose-500">City</span>
+              </span>
+            </Link>
+            
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <button
+                onClick={handleBack}
+                className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors -ml-1 disabled:opacity-50"
+                aria-label="Go back"
+                disabled={submitLoading}
+              >
+                <ArrowLeft className="h-4 w-4 text-slate-500" />
+              </button>
+              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Create new password</h1>
+            </div>
+            <p className="mt-2 text-sm text-slate-500">Choose a strong password for your account.</p>
           </div>
-          <p className="mt-2 text-sm text-slate-500">Choose a strong password for your account.</p>
+
+          {/* Main Card */}
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-7 shadow-sm sm:shadow-md relative">
+            <form onSubmit={handlePasswordReset} className="space-y-4" noValidate>
+              {/* ✅ FIX: Convert null to undefined with ?? undefined */}
+              <Field label="New password" error={error ?? undefined}>
+                <div className="relative">
+                  <input
+                    className={`${inputClass} pr-11`}
+                    placeholder="At least 8 characters"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="new-password"
+                    required
+                    minLength={8}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    disabled={submitLoading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors disabled:opacity-50"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    disabled={submitLoading}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </Field>
+
+              {/* ✅ FIX: Convert null to undefined with ?? undefined */}
+              <Field label="Confirm new password" error={error ?? undefined}>
+                <div className="relative">
+                  <input
+                    className={`${inputClass} pr-11`}
+                    placeholder="Confirm your new password"
+                    type={showConfirmPassword ? "text" : "password"}
+                    autoComplete="new-password"
+                    required
+                    minLength={8}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    disabled={submitLoading}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors disabled:opacity-50"
+                    aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                    disabled={submitLoading}
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </Field>
+
+              <button
+                type="submit"
+                disabled={submitLoading}
+                className="group flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-rose-500 to-rose-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-rose-500/25 transition-all hover:from-rose-600 hover:to-rose-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-400 disabled:shadow-none"
+              >
+                {submitLoading ? (
+                  <>
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    <span>Updating password...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Update password</span>
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
+
+          {/* Footer Links */}
+          <div className="mt-5 border-t border-slate-100 pt-5 text-center text-sm text-slate-500">
+            Remember your password?{" "}
+            <Link href="/login" className="font-semibold text-rose-500 hover:text-rose-600 transition-colors">
+              Sign in
+            </Link>
+          </div>
         </div>
-
-        {/* Main Card */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-7 shadow-sm sm:shadow-md relative">
-          <form onSubmit={handlePasswordReset} className="space-y-4" noValidate>
-            {/* ✅ FIX: Convert null to undefined with ?? undefined */}
-            <Field label="New password" error={error ?? undefined}>
-              <div className="relative">
-                <input
-                  className={`${inputClass} pr-11`}
-                  placeholder="At least 8 characters"
-                  type={showPassword ? "text" : "password"}
-                  autoComplete="new-password"
-                  required
-                  minLength={8}
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  disabled={submitLoading}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors disabled:opacity-50"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                  disabled={submitLoading}
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </Field>
-
-            {/* ✅ FIX: Convert null to undefined with ?? undefined */}
-            <Field label="Confirm new password" error={error ?? undefined}>
-              <div className="relative">
-                <input
-                  className={`${inputClass} pr-11`}
-                  placeholder="Confirm your new password"
-                  type={showConfirmPassword ? "text" : "password"}
-                  autoComplete="new-password"
-                  required
-                  minLength={8}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  disabled={submitLoading}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors disabled:opacity-50"
-                  aria-label={showConfirmPassword ? "Hide password" : "Show password"}
-                  disabled={submitLoading}
-                >
-                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </Field>
-
-            <button
-              type="submit"
-              disabled={submitLoading}
-              className="group flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-rose-500 to-rose-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-rose-500/25 transition-all hover:from-rose-600 hover:to-rose-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-400 disabled:shadow-none"
-            >
-              {submitLoading ? (
-                <>
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  <span>Updating password...</span>
-                </>
-              ) : (
-                <>
-                  <span>Update password</span>
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                </>
-              )}
-            </button>
-          </form>
-        </div>
-
-        {/* Footer Links */}
-        <div className="mt-5 border-t border-slate-100 pt-5 text-center text-sm text-slate-500">
-          Remember your password?{" "}
-          <Link href="/login" className="font-semibold text-rose-500 hover:text-rose-600 transition-colors">
-            Sign in
-          </Link>
-        </div>
-      </div>
+      </RequireNoAuth>
     );
   }
 
   if (view === "success") {
     return (
-      <div className="mx-auto w-full max-w-lg px-4 py-8 sm:py-10">
-        {/* Header */}
-        <div className="mb-6 sm:mb-8 text-center">
-          <Link href="/" className="inline-flex items-center gap-2 mb-6 group">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-rose-500 to-rose-600 shadow-lg shadow-rose-500/25 transition-transform group-hover:scale-105">
-              <CheckCircle2 className="h-4 w-4 text-white" />
-            </span>
-            <span className="text-lg font-extrabold tracking-tight text-slate-900">
-              StreetLux<span className="text-rose-500">City</span>
-            </span>
-          </Link>
-          
-          <div className="flex justify-center mb-4">
-            <div className="h-16 w-16 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-lg shadow-green-500/25 animate-bounce">
-              <CheckCircle2 className="h-8 w-8 text-white" />
+      <RequireNoAuth>
+        <div className="mx-auto w-full max-w-lg px-4 py-8 sm:py-10">
+          {/* Header */}
+          <div className="mb-6 sm:mb-8 text-center">
+            <Link href="/" className="inline-flex items-center gap-2 mb-6 group">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-rose-500 to-rose-600 shadow-lg shadow-rose-500/25 transition-transform group-hover:scale-105">
+                <CheckCircle2 className="h-4 w-4 text-white" />
+              </span>
+              <span className="text-lg font-extrabold tracking-tight text-slate-900">
+                StreetLux<span className="text-rose-500">City</span>
+              </span>
+            </Link>
+            
+            <div className="flex justify-center mb-4">
+              <div className="h-16 w-16 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center shadow-lg shadow-green-500/25 animate-bounce">
+                <CheckCircle2 className="h-8 w-8 text-white" />
+              </div>
             </div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">
+              {flow === "registration" ? "Account verified! 🎉" : "Password updated! 🎉"}
+            </h1>
+            <p className="mt-2 text-sm text-slate-500">
+              {flow === "registration" ? "Redirecting you to sign in..." : "Redirecting you to sign in..."}
+            </p>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">
-            {flow === "registration" ? "Account verified! 🎉" : "Password updated! 🎉"}
-          </h1>
-          <p className="mt-2 text-sm text-slate-500">
-            {flow === "registration" ? "Redirecting you to sign in..." : "Redirecting you to sign in..."}
-          </p>
-        </div>
 
-        {/* Main Card */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-7 shadow-sm sm:shadow-md">
-          <div className="py-8 text-center">
-            <div className="space-y-2">
-              <p className="text-slate-600">
-                {flow === "registration" 
-                  ? "Your email has been verified successfully!" 
-                  : "Your password has been updated successfully!"}
-              </p>
-              <p className="text-sm text-slate-400">Signing you in...</p>
-            </div>
-            <div className="mt-6 h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-rose-500 to-rose-600 rounded-full animate-pulse" style={{ width: "100%" }} />
+          {/* Main Card */}
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-7 shadow-sm sm:shadow-md">
+            <div className="py-8 text-center">
+              <div className="space-y-2">
+                <p className="text-slate-600">
+                  {flow === "registration" 
+                    ? "Your email has been verified successfully!" 
+                    : "Your password has been updated successfully!"}
+                </p>
+                <p className="text-sm text-slate-400">Signing you in...</p>
+              </div>
+              <div className="mt-6 h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-rose-500 to-rose-600 rounded-full animate-pulse" style={{ width: "100%" }} />
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </RequireNoAuth>
     );
   }
 
   return (
-    <div className="mx-auto w-full max-w-lg px-4 py-8 sm:py-10">
+    <RequireNoAuth>
+      <div className="mx-auto w-full max-w-lg px-4 py-8 sm:py-10">
       {/* Header */}
       <div className="mb-6 sm:mb-8 text-center">
         <Link href="/" className="inline-flex items-center gap-2 mb-6 group">
@@ -544,5 +550,6 @@ export default function VerifyOtpPage() {
       </div>
 
     </div>
+    </RequireNoAuth>
   );
 }

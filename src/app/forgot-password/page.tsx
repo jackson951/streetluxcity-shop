@@ -6,6 +6,7 @@ import { ArrowLeft, ArrowRight, Eye, EyeOff, Mail, RefreshCw, CheckCircle2, Shie
 import Link from "next/link";
 import { ForgotPasswordRequest, ResetPasswordRequest, VerifyOtpRequest, OtpResponse } from "@/lib/types";
 import { api } from "@/lib/api";
+import { RequireNoAuth } from "@/components/require-no-auth";
 
 // Reusable Field component
 function Field({
@@ -303,7 +304,8 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-lg px-4 py-8 sm:py-10">
+    <RequireNoAuth>
+      <div className="mx-auto w-full max-w-lg px-4 py-8 sm:py-10">
       {/* Header */}
       <div className="mb-6 sm:mb-8 text-center">
         <Link href="/" className="inline-flex items-center gap-2 mb-6 group">
@@ -598,5 +600,6 @@ export default function ForgotPasswordPage() {
         </div>
       )}
     </div>
+    </RequireNoAuth>
   );
 }

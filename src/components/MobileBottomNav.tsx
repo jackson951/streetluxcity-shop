@@ -17,17 +17,26 @@ export function MobileBottomNav() {
 
   const cartCount = cartQuantity || 0;
 
-  // ── Logged IN: Home, Products, Categories, Cart, Orders, Profile (6 tabs)
+  // ── Admin: Home, Products, Categories, Cart (4 tabs)
+  // ── Customer: Home, Products, Categories, Cart, Orders, Profile (6 tabs)
   // ── Logged OUT: Home, Products, Categories, Cart, Login (5 tabs)
+  const isAdmin = user?.roles?.includes('ADMIN') ?? false;
   const tabs = user
-    ? [
-        { href: '/',           label: 'Home',       icon: Home },
-        { href: '/products',   label: 'Products',   icon: ShoppingBag },
-        { href: '/categories', label: 'Categories', icon: Grid3x3 },
-        { href: '/cart',       label: 'Cart',       icon: ShoppingCart, badge: cartCount },
-        { href: '/orders',     label: 'Orders',     icon: Package },
-        { href: '/profile',    label: 'Profile',    icon: User },
-      ]
+    ? isAdmin
+      ? [
+          { href: '/',           label: 'Home',       icon: Home },
+          { href: '/products',   label: 'Products',   icon: ShoppingBag },
+          { href: '/categories', label: 'Categories', icon: Grid3x3 },
+          { href: '/cart',       label: 'Cart',       icon: ShoppingCart, badge: cartCount },
+        ]
+      : [
+          { href: '/',           label: 'Home',       icon: Home },
+          { href: '/products',   label: 'Products',   icon: ShoppingBag },
+          { href: '/categories', label: 'Categories', icon: Grid3x3 },
+          { href: '/cart',       label: 'Cart',       icon: ShoppingCart, badge: cartCount },
+          { href: '/orders',     label: 'Orders',     icon: Package },
+          { href: '/profile',    label: 'Profile',    icon: User },
+        ]
     : [
         { href: '/',           label: 'Home',       icon: Home },
         { href: '/products',   label: 'Products',   icon: ShoppingBag },
